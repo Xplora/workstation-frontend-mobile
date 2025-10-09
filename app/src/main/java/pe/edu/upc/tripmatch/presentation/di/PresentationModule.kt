@@ -20,20 +20,34 @@ object PresentationModule {
     private lateinit var expRepository: ExperienceRepository
     private lateinit var authRepository: AuthRepository
 
-    fun init(context: Context) {
-        db = Room.databaseBuilder(context, AppDatabase::class.java, "tripmatch_db").build()
-        expDao = db.experienceDao()
-        expService = ExperienceService.create()
-        authService = AuthService.create()
+    private var _authViewModel: AuthViewModel? = null
+    private var _experienceListViewModel: ExperienceListViewModel? = null
 
-        expRepository = ExperienceRepository(expDao, expService)
-        authRepository = AuthRepository(authService, context)
+    fun init(context: Context) {
+        if (!::db.isInitialized) {
+            db = Room.databaseBuilder(context, AppDatabase::class.java, "tripmatch_db").build()
+            expDao = db.experienceDao()
+            expService = ExperienceService.create()
+            authService = AuthService.create()
+
+            expRepository = ExperienceRepository(expDao, expService)
+            authRepository = AuthRepository(authService, context)
+        }
+    }
+
+    fun getAuthViewModel(): AuthViewModel {
+        val existing = _authViewModel
+        if (existing != null) return existing
+        val created = AuthViewModel(authRepository)
+        _authViewModel = created
+        return created
     }
 
     fun getExperienceListViewModel(): ExperienceListViewModel {
-        return ExperienceListViewModel(expRepository)
-    }
-    fun getAuthViewModel(): AuthViewModel {
-        return AuthViewModel(authRepository)
+        val existing = _experienceListViewModel
+        if (existing != null) return existing
+        val created = ExperienceListViewModel(expRepository)
+        _experienceListViewModel = created
+        return created
     }
 }
