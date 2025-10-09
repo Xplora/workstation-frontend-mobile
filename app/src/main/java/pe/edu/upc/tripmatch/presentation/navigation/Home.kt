@@ -1,8 +1,14 @@
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+
 package pe.edu.upc.tripmatch.presentation.navigation
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.CalendarMonth
@@ -10,11 +16,11 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.QuestionAnswer
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -25,7 +31,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,6 +45,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import pe.edu.upc.tripmatch.R
 import pe.edu.upc.tripmatch.presentation.di.PresentationModule
+import pe.edu.upc.tripmatch.presentation.view.AgencyDashboardScreen
 import pe.edu.upc.tripmatch.presentation.view.AuthFlowScreen
 import pe.edu.upc.tripmatch.presentation.view.AuthScreen
 import pe.edu.upc.tripmatch.presentation.view.ExperienceListScreen
@@ -51,9 +57,8 @@ data class NavigationItem(val title: String, val route: String)
 @Composable
 fun MainAppContent(authViewModel: AuthViewModel) {
     val navController = rememberNavController()
-
     val ui by authViewModel.uiState.collectAsState()
-    val isAgency = ui.currentUser?.role == "agency"
+    val isAgency = ui.isAgency
 
     val Teal = Color(0xFF318C8B)
     val TextSecondary = Color(0xFF58636A)
@@ -81,17 +86,15 @@ fun MainAppContent(authViewModel: AuthViewModel) {
     Scaffold(
         containerColor = Color.White,
         topBar = {
-
             TopAppBar(
                 modifier = Modifier.height(90.dp),
                 title = {
                     Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Image(
                             painter = painterResource(R.drawable.ic_tripmatch_logo),
-                            contentDescription = "TripMatch",
+                            contentDescription = "TripMatch Logo",
                             modifier = Modifier
                                 .size(60.dp)
                                 .padding(end = 16.dp)
@@ -105,12 +108,20 @@ fun MainAppContent(authViewModel: AuthViewModel) {
                         )
                     }
                 },
+                actions = {
+                    IconButton(onClick = { authViewModel.logout() }) {
+                        Icon(
+                            imageVector = Icons.Default.Logout,
+                            contentDescription = "Cerrar Sesión",
+                            tint = Color.Red.copy(alpha = 0.7f)
+                        )
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.White,
                     titleContentColor = Color.Black
                 )
             )
-
         },
         bottomBar = {
             Column {
@@ -165,31 +176,33 @@ fun MainAppContent(authViewModel: AuthViewModel) {
                 .padding(padding)
                 .fillMaxSize()
         ) {
+            // HOME: cambia según rol
             composable("home") {
-                Column(
-                    Modifier
-                        .fillMaxSize()
-                        .padding(bottom = 8.dp)
-                ) {
-                    ExperienceListScreen(modifier = Modifier.weight(1f))
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Button(
-                        onClick = { authViewModel.logout() },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
-                    ) {
-                        Text("CERRAR SESIÓN")
-                    }
+                if (isAgency) {
+                    AgencyDashboardScreen(
+                        agencyName = ui.name.ifBlank { "Tu Agencia" },
+                        onAddExperience = { /* navController.navigate("manage_experiences") */ },
+                        onViewAllReviews = { /* navController.navigate("profile") */ },
+                        onViewAllBookings = { /* navController.navigate("bookings") */ }
+                    )
+                } else {
+                    // Ahora la lista de experiencias ocupa todo el espacio disponible
+                    ExperienceListScreen()
                 }
             }
-            composable("favorites") { FavoritesScreen() }
-            composable("manage_experiences") { /* Gestión */ }
-            composable("bookings") { /* Reservas */ }
-            composable("queries") { /* Consultas */ }
-            composable("itineraries") { /* Itinerarios */ }
-            composable("profile") { /* Perfil */ }
+
+            // PESTAÑAS AGENCY
+            if (isAgency) {
+                composable("manage_experiences") { Text("Pantalla de Gestión de Experiencias") }
+                composable("bookings") { Text("Pantalla de Reservas") }
+                composable("queries") { Text("Pantalla de Consultas") }
+                composable("profile") { Text("Pantalla de Perfil de Agencia") }
+            } else {
+                // PESTAÑAS TURISTA
+                composable("favorites") { FavoritesScreen() }
+                composable("itineraries") { Text("Pantalla de Itinerarios") }
+                composable("profile") { Text("Pantalla de Perfil de Turista") }
+            }
         }
     }
 }
@@ -199,18 +212,13 @@ fun Home() {
     val authViewModel: AuthViewModel = remember { PresentationModule.getAuthViewModel() }
     val uiState by authViewModel.uiState.collectAsState()
 
-    val currentScreen =
-        if (uiState.currentUser != null) AuthFlowScreen.MainApp else AuthFlowScreen.Login
-
-    when (currentScreen) {
-        AuthFlowScreen.Login, AuthFlowScreen.Register -> {
-            AuthScreen(
-                authViewModel = authViewModel,
-                onLoginSuccess = { /* Se recompondrá automáticamente */ }
-            )
-        }
-        AuthFlowScreen.MainApp -> {
-            MainAppContent(authViewModel = authViewModel)
-        }
+    // Decide qué flujo mostrar: Autenticación o la App Principal
+    if (uiState.currentUser == null) {
+        AuthScreen(
+            authViewModel = authViewModel,
+            onLoginSuccess = { /* La recomposición se encarga de cambiar de pantalla */ }
+        )
+    } else {
+        MainAppContent(authViewModel = authViewModel)
     }
 }
