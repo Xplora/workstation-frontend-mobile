@@ -45,7 +45,6 @@ fun AgencyDashboardScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color.White)
-                    .systemBarsPadding()
                     .padding(horizontal = 16.dp)
             ) {
                 item { Spacer(Modifier.height(20.dp)) }

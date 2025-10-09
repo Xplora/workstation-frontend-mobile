@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import pe.edu.upc.tripmatch.data.repository.ExperienceRepository
 import pe.edu.upc.tripmatch.domain.model.Experience
+import android.util.Log
 
 data class ManageExperiencesUiState(
     val isLoading: Boolean = true,
@@ -41,6 +42,10 @@ class ManageExperiencesViewModel(
                 val experiences = experienceRepository.getExperiencesForAgency(agencyId)
                 _uiState.update { it.copy(isLoading = false, experiences = experiences) }
             } catch (e: Exception) {
+                // --- CAMBIO CLAVE AQUÍ ---
+                // Imprimimos el error real en la consola de Logcat
+                Log.e("ManageExpViewModel", "Error al cargar experiencias de la agencia", e)
+
                 _uiState.update { it.copy(isLoading = false, error = "Error al cargar las experiencias.") }
             }
         }
@@ -48,8 +53,6 @@ class ManageExperiencesViewModel(
 
     fun onConfirmDelete() {
         val experience = _uiState.value.experienceToDelete
-        // Aquí iría la llamada al repositorio para eliminar la experiencia
-        // ej: viewModelScope.launch { experienceRepository.delete(experience.id) }
         println("Eliminando experiencia: ${experience?.title}")
 
         // Cerramos el diálogo y actualizamos la lista (simulado por ahora)

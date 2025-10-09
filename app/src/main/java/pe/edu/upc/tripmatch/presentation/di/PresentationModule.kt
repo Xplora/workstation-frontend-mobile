@@ -45,7 +45,12 @@ object PresentationModule {
             agencyRepository = AgencyRepository(agencyService)
         }
     }
+    fun onLogout() {
 
+        _agencyDashboardViewModel = null
+        _manageExperiencesViewModel = null
+        _experienceListViewModel = null
+    }
     fun getAuthViewModel(): AuthViewModel {
         val existing = _authViewModel
         if (existing != null) return existing

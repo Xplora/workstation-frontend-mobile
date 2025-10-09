@@ -11,6 +11,7 @@ import pe.edu.upc.tripmatch.data.model.SignInCommand
 import pe.edu.upc.tripmatch.data.model.SignUpCommand
 import pe.edu.upc.tripmatch.data.repository.AuthRepository
 import pe.edu.upc.tripmatch.domain.model.User
+import pe.edu.upc.tripmatch.presentation.di.PresentationModule
 
 data class AuthUiState(
     val email: String = "",
@@ -168,6 +169,9 @@ class AuthViewModel(
 
     fun logout() {
         repository.logout()
+
+        PresentationModule.onLogout()
+
         _uiState.value = AuthUiState()
     }
 
