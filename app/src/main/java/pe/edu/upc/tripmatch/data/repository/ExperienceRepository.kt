@@ -50,4 +50,12 @@ class ExperienceRepository(
     suspend fun isFavorite(id: Int): Boolean {
         return experienceDao.getFavoriteById(id) != null
     }
+    suspend fun getExperiencesForAgency(agencyId: String): List<Experience> {
+        val apiExperiences = experienceService.getExperiencesByAgencyId(agencyId)
+        return apiExperiences.map { dto ->
+            val domain = dto.toDomain()
+            domain.isFavorite = isFavorite(domain.id)
+            domain
+        }
+    }
 }

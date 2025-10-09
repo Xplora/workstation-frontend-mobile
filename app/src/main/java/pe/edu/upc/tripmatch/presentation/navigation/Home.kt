@@ -3,38 +3,21 @@
 package pe.edu.upc.tripmatch.presentation.navigation
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Event
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Logout
-import androidx.compose.material.icons.filled.QuestionAnswer
-import androidx.compose.material3.Divider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -45,14 +28,73 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import pe.edu.upc.tripmatch.R
 import pe.edu.upc.tripmatch.presentation.di.PresentationModule
-import pe.edu.upc.tripmatch.presentation.view.AgencyDashboardScreen
-import pe.edu.upc.tripmatch.presentation.view.AuthFlowScreen
-import pe.edu.upc.tripmatch.presentation.view.AuthScreen
-import pe.edu.upc.tripmatch.presentation.view.ExperienceListScreen
-import pe.edu.upc.tripmatch.presentation.view.FavoritesScreen
+import pe.edu.upc.tripmatch.presentation.view.*
 import pe.edu.upc.tripmatch.presentation.viewmodel.AuthViewModel
 
 data class NavigationItem(val title: String, val route: String)
+
+@Composable
+private fun AppBarCompact(
+    onOpenProfile: () -> Unit,
+    onLogout: () -> Unit,
+    avatarUrl: String? = null
+) {
+    Surface(
+        color = Color.White,
+        tonalElevation = 2.dp,
+        shadowElevation = 4.dp,
+        modifier = Modifier
+            .fillMaxWidth()
+    ) {
+        Column {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 16.dp, top = 50.dp, bottom = 10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.ic_tripmatch_logo),
+                    contentDescription = "TripMatch",
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape),
+
+                    contentScale = ContentScale.Crop
+                )
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    text = "TripMatch",
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 22.sp,
+                    color = Color.Black
+                )
+                Spacer(Modifier.weight(1f))
+
+                IconButton(
+                    onClick = onOpenProfile,
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.AccountCircle,
+                        contentDescription = "Perfil",
+                        tint = Color(0xFF58636A),
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+
+                IconButton(onClick = onLogout) {
+                    Icon(
+                        imageVector = Icons.Filled.Logout,
+                        contentDescription = "Cerrar sesión",
+                        tint = Color(0xFFD32F2F)
+                    )
+                }
+            }
+            HorizontalDivider(color = Color(0x1F000000), thickness = 1.dp)
+        }
+    }
+}
 
 @Composable
 fun MainAppContent(authViewModel: AuthViewModel) {
@@ -63,84 +105,52 @@ fun MainAppContent(authViewModel: AuthViewModel) {
     val Teal = Color(0xFF318C8B)
     val TextSecondary = Color(0xFF58636A)
 
-    val navigationItems = if (isAgency) {
+    val bottomNavItems = if (isAgency) {
         listOf(
             NavigationItem("Inicio", "home"),
             NavigationItem("Experiencias", "manage_experiences"),
             NavigationItem("Reservas", "bookings"),
-            NavigationItem("Consultas", "queries"),
-            NavigationItem("Perfil", "profile")
+            NavigationItem("Consultas", "queries")
         )
     } else {
         listOf(
             NavigationItem("Inicio", "home"),
             NavigationItem("Favoritos", "favorites"),
-            NavigationItem("Itinerarios", "itineraries"),
-            NavigationItem("Perfil", "profile")
+            NavigationItem("Itinerarios", "itineraries")
         )
     }
 
     val backStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = backStackEntry?.destination?.route ?: navigationItems.first().route
+    val currentRoute = backStackEntry?.destination?.route ?: "home"
 
     Scaffold(
-        containerColor = Color.White,
+        containerColor = Color(0xFFF5F5F5),
         topBar = {
-            TopAppBar(
-                modifier = Modifier.height(90.dp),
-                title = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Image(
-                            painter = painterResource(R.drawable.ic_tripmatch_logo),
-                            contentDescription = "TripMatch Logo",
-                            modifier = Modifier
-                                .size(60.dp)
-                                .padding(end = 16.dp)
-                        )
-                        Text(
-                            text = "TripMatch",
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 25.sp,
-                            letterSpacing = 0.2.sp,
-                            color = Color.Black
-                        )
+            AppBarCompact(
+                onOpenProfile = {
+                    navController.navigate("profile") {
+                        launchSingleTop = true
                     }
                 },
-                actions = {
-                    IconButton(onClick = { authViewModel.logout() }) {
-                        Icon(
-                            imageVector = Icons.Default.Logout,
-                            contentDescription = "Cerrar Sesión",
-                            tint = Color.Red.copy(alpha = 0.7f)
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White,
-                    titleContentColor = Color.Black
-                )
+                onLogout = { authViewModel.logout() }
             )
         },
         bottomBar = {
-            Column {
-                Divider(color = Color(0x1F000000))
+            if (currentRoute != "profile") {
                 NavigationBar(
                     containerColor = Color.White,
                     contentColor = Teal,
-                    tonalElevation = 0.dp
+                    tonalElevation = 3.dp
                 ) {
-                    navigationItems.forEach { item ->
+                    bottomNavItems.forEach { item ->
                         val selected = currentRoute == item.route
-                        val icon = when (item.title) {
-                            "Inicio" -> Icons.Filled.Home
-                            "Favoritos" -> Icons.Filled.Favorite
-                            "Itinerarios" -> Icons.Filled.CalendarMonth
-                            "Experiencias" -> Icons.Filled.Edit
-                            "Reservas" -> Icons.Filled.Event
-                            "Consultas" -> Icons.Filled.QuestionAnswer
-                            "Perfil" -> Icons.Filled.AccountCircle
+                        val icon = when (item.route) {
+                            "home" -> Icons.Filled.Home
+                            "favorites" -> Icons.Filled.Favorite
+                            "itineraries" -> Icons.Filled.CalendarMonth
+                            "manage_experiences" -> Icons.Filled.Edit
+                            "bookings" -> Icons.Filled.Event
+                            "queries" -> Icons.Filled.QuestionAnswer
                             else -> Icons.Filled.Home
                         }
                         NavigationBarItem(
@@ -148,7 +158,7 @@ fun MainAppContent(authViewModel: AuthViewModel) {
                             onClick = {
                                 if (!selected) {
                                     navController.navigate(item.route) {
-                                        popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                        popUpTo("home") { saveState = true }
                                         launchSingleTop = true
                                         restoreState = true
                                     }
@@ -173,37 +183,127 @@ fun MainAppContent(authViewModel: AuthViewModel) {
             navController = navController,
             startDestination = "home",
             modifier = Modifier
-                .padding(padding)
                 .fillMaxSize()
+                .padding(padding)
         ) {
-            // HOME: cambia según rol
             composable("home") {
                 if (isAgency) {
-                    AgencyDashboardScreen(
-                        agencyName = ui.name.ifBlank { "Tu Agencia" },
-                        onAddExperience = { /* navController.navigate("manage_experiences") */ },
-                        onViewAllReviews = { /* navController.navigate("profile") */ },
-                        onViewAllBookings = { /* navController.navigate("bookings") */ }
-                    )
+                    AgencyDashboardScreen()
                 } else {
-                    // Ahora la lista de experiencias ocupa todo el espacio disponible
                     ExperienceListScreen()
                 }
             }
 
-            // PESTAÑAS AGENCY
             if (isAgency) {
-                composable("manage_experiences") { Text("Pantalla de Gestión de Experiencias") }
-                composable("bookings") { Text("Pantalla de Reservas") }
-                composable("queries") { Text("Pantalla de Consultas") }
-                composable("profile") { Text("Pantalla de Perfil de Agencia") }
+                composable("manage_experiences") {
+                    ManageExperiencesScreen(
+                        onAddExperience = { navController.navigate("create_experience") },
+                        onEditExperience = { experienceId ->
+                            navController.navigate("edit_experience/$experienceId")
+                        }
+                    )
+                }
+                composable("bookings") {
+                    Text(
+                        "Pantalla de Reservas",
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
+                composable("queries") {
+                    Text(
+                        "Pantalla de Consultas",
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
+                composable("create_experience") {
+                    Text("Aquí irá el formulario para CREAR una nueva experiencia")
+                }
+                composable("edit_experience/{experienceId}") { backStackEntry ->
+                    val experienceId = backStackEntry.arguments?.getString("experienceId")
+                    Text("Aquí irá el formulario para EDITAR la experiencia con ID: $experienceId")
+                }
             } else {
-                // PESTAÑAS TURISTA
                 composable("favorites") { FavoritesScreen() }
-                composable("itineraries") { Text("Pantalla de Itinerarios") }
-                composable("profile") { Text("Pantalla de Perfil de Turista") }
+                composable("itineraries") {
+                    Text(
+                        "Pantalla de Itinerarios",
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
+            }
+
+            composable("profile") {
+                ProfileScreen(
+                    isAgency = isAgency,
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    }
+                )
             }
         }
+    }
+}
+
+@Composable
+fun ProfileScreen(
+    isAgency: Boolean,
+    onNavigateBack: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onNavigateBack) {
+                Icon(
+                    imageVector = Icons.Filled.ArrowBack,
+                    contentDescription = "Volver",
+                    tint = Color(0xFF318C8B)
+                )
+            }
+            Text(
+                text = "Mi Perfil",
+                fontWeight = FontWeight.Bold,
+                fontSize = 24.sp,
+                modifier = Modifier.padding(start = 8.dp)
+            )
+        }
+
+        Spacer(Modifier.height(24.dp))
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = Color.White)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.AccountCircle,
+                    contentDescription = null,
+                    modifier = Modifier.size(80.dp),
+                    tint = Color(0xFF318C8B)
+                )
+                Spacer(Modifier.height(16.dp))
+                Text(
+                    text = if (isAgency) "Perfil de Agencia" else "Perfil de Turista",
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 18.sp
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = "Aquí irá la información del usuario",
+                    color = Color(0xFF58636A),
+                    fontSize = 14.sp
+                )
+            }
+        }
+        Spacer(Modifier.height(16.dp))
+        Text("Configuración y opciones adicionales...", color = Color.Gray)
     }
 }
 
@@ -212,11 +312,10 @@ fun Home() {
     val authViewModel: AuthViewModel = remember { PresentationModule.getAuthViewModel() }
     val uiState by authViewModel.uiState.collectAsState()
 
-    // Decide qué flujo mostrar: Autenticación o la App Principal
     if (uiState.currentUser == null) {
         AuthScreen(
             authViewModel = authViewModel,
-            onLoginSuccess = { /* La recomposición se encarga de cambiar de pantalla */ }
+            onLoginSuccess = { /* La recomposición se encarga */ }
         )
     } else {
         MainAppContent(authViewModel = authViewModel)

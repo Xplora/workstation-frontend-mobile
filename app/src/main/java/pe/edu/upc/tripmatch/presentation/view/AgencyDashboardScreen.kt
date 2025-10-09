@@ -1,322 +1,208 @@
 package pe.edu.upc.tripmatch.presentation.view
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.delay
-import pe.edu.upc.tripmatch.R
+import pe.edu.upc.tripmatch.presentation.di.PresentationModule
+import pe.edu.upc.tripmatch.presentation.viewmodel.AgencyDashboardViewModel
+import pe.edu.upc.tripmatch.presentation.viewmodel.BookingUi
+import pe.edu.upc.tripmatch.presentation.viewmodel.ReviewUi
 
-// ======================
-// Paleta (según tu guía)
-// ======================
-private val BrandTeal = Color(0xFF67B7B6)     // teal principal
-private val BrandTealDark = Color(0xFF318C8B) // acento más oscuro (para énfasis)
-private val BrandYellow = Color(0xFFFFDCA4)   // naranja/amarillo suave
-private val TealLight = Color(0xFFD9F2EF)     // fondo celeste-verdoso pálido (tabla)
-private val TextPrimary = Color(0xFF000000)
+private val BrandTeal = Color(0xFF67B7B6)
+private val BrandYellow = Color(0xFFFFDCA4)
+private val TealLight = Color(0xFFD9F2EF)
+private val TextPrimary = Color(0xFF1A202C)
 private val TextSecondary = Color(0xFF58636A)
 private val BorderLight = Color(0xFFE2E8F0)
 
-// ======================
-// Datos mock
-// ======================
-data class AgencyStats(
-    val confirmedBookings: Int,
-    val newQueries: Int,
-    val localExperiences: Int,
-    val localEarnings: String
-)
-
-data class BookingUi(
-    val traveler: String,
-    val experience: String,
-    val date: String,
-    val status: String
-)
-
-data class ReviewUi(
-    val id: String,
-    val author: String,
-    val comment: String,
-    val rating: Int, // 0..5
-    val avatarRes: Int = R.drawable.ic_tripmatch_logo
-)
-
-// ======================
-// Pantalla principal
-// ======================
 @Composable
 fun AgencyDashboardScreen(
-    agencyName: String = "NickName",
-    onAddExperience: () -> Unit = {},
-    onViewAllReviews: () -> Unit = {},
-    onViewAllBookings: () -> Unit = {}
+    viewModel: AgencyDashboardViewModel = PresentationModule.getAgencyDashboardViewModel()
 ) {
-    var isLoading by remember { mutableStateOf(true) }
+    val uiState by viewModel.uiState.collectAsState()
 
-    // Mock inicial (reemplazar luego con repo/VM)
-    var stats by remember {
-        mutableStateOf(
-            AgencyStats(
-                confirmedBookings = 6,
-                newQueries = 2,
-                localExperiences = 12,
-                localEarnings = "S/ 12,450"
-            )
-        )
-    }
-    var recent by remember {
-        mutableStateOf(
-            listOf(
-                BookingUi("Ana López", "City Tour Arequipa", "20/04/25", "Activo"),
-                BookingUi("Ana López", "City Tour Arequipa", "20/04/25", "Activo"),
-                BookingUi("Ana López", "City Tour Arequipa", "20/04/25", "Activo")
-            )
-        )
-    }
-    var reviews by remember {
-        mutableStateOf(
-            listOf(
-                ReviewUi("1", "Carlos Méndez",
-                    "“Una experiencia inolvidable, todo estuvo muy bien organizado.”", 5),
-                ReviewUi("2", "Carlos Méndez",
-                    "“Una experiencia inolvidable, todo estuvo muy bien organizado.”", 5)
-            )
-        )
-    }
-
-    LaunchedEffect(Unit) {
-        // simula carga corta
-        delay(300)
-        isLoading = false
-    }
-
-    if (isLoading) {
-        LoadingState()
-        return
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-            .systemBarsPadding()
-            .padding(horizontal = 16.dp)
-    ) {
-        Spacer(Modifier.height(12.dp))
-
-        // Encabezado de marca (coincide con tu AppBar visual; si ya lo tienes arriba, puedes omitir este bloque)
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
-        ) {
+    when {
+        uiState.isLoading -> {
+            LoadingState()
         }
-
-        Spacer(Modifier.height(20.dp))
-
-        // Bloque de bienvenida
-        Text(
-            text = "Hola, $agencyName",
-            fontSize = 26.sp,
-            fontWeight = FontWeight.Black,
-            color = TextPrimary
-        )
-        Spacer(Modifier.height(6.dp))
-        Text(
-            text = "¿Listo para conectar con nuevos viajeros?",
-            fontSize = 14.sp,
-            color = TextSecondary
-        )
-
-        Spacer(Modifier.height(20.dp))
-
-        // Sección: Resumen (2 filas de KPIs: Reservas/Consultas y Locales)
-        Text(
-            text = "Resumen",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = TextPrimary
-        )
-        Spacer(Modifier.height(10.dp))
-
-        // Fila 1: Reservas confirmadas / Consultas nuevas
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            KpiCard(
-                number = stats.confirmedBookings.toString(),
-                line1 = "Reservas",
-                line2 = "Confirmadas",
-                container = BrandTeal,
-                textOn = Color.White,
-                modifier = Modifier.weight(1f)
-            )
-            KpiCard(
-                number = stats.newQueries.toString(),
-                line1 = "Consultas",
-                line2 = "Nuevas",
-                container = BrandYellow,
-                textOn = TextPrimary,
-                modifier = Modifier.weight(1f)
-            )
+        uiState.errorMessage != null -> {
+            ErrorState(message = uiState.errorMessage!!)
         }
+        else -> {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.White)
+                    .systemBarsPadding()
+                    .padding(horizontal = 16.dp)
+            ) {
+                item { Spacer(Modifier.height(20.dp)) }
 
-        Spacer(Modifier.height(12.dp))
+                item {
+                    Text(
+                        text = "Hola, ${uiState.agencyName}",
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = TextPrimary
 
-        // Fila 2: Experiencias locales / Ganancias locales
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            KpiCard(
-                number = stats.localExperiences.toString(),
-                line1 = "Experiencias",
-                line2 = "Locales",
-                container = BrandTeal.copy(alpha = 0.85f),
-                textOn = Color.White,
-                modifier = Modifier.weight(1f)
-            )
-            KpiCard(
-                number = stats.localEarnings,
-                line1 = "Ganancias",
-                line2 = "Locales",
-                container = BrandYellow.copy(alpha = 0.85f),
-                textOn = TextPrimary,
-                modifier = Modifier.weight(1f)
-            )
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = "¿Listo para conectar con nuevos viajeros?",
+                        fontSize = 15.sp,
+                        color = TextSecondary
+                    )
+                    Spacer(Modifier.height(24.dp))
+                }
+
+                item {
+                    SectionHeader("Resumen")
+                    Spacer(Modifier.height(12.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        KpiCard(
+                            number = uiState.stats.confirmedBookings.toString(),
+                            label = "Reservas Confirmadas",
+                            container = BrandTeal,
+                            modifier = Modifier.weight(1f)
+                        )
+                        KpiCard(
+                            number = uiState.stats.newQueries.toString(),
+                            label = "Consultas Nuevas",
+                            container = BrandYellow,
+                            textOn = TextPrimary,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        KpiCard(
+                            number = uiState.stats.totalExperiences.toString(),
+                            label = "Experiencias Activas",
+                            container = BrandTeal.copy(alpha = 0.85f),
+                            modifier = Modifier.weight(1f)
+                        )
+                        KpiCard(
+                            number = uiState.stats.totalEarnings,
+                            label = "Ganancias Totales",
+                            container = BrandYellow.copy(alpha = 0.85f),
+                            textOn = TextPrimary,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    Spacer(Modifier.height(28.dp))
+                }
+
+                item {
+                    SectionHeader("Reservas Recientes")
+                    Spacer(Modifier.height(12.dp))
+                }
+                if (uiState.recentBookings.isEmpty()) {
+                    item { EmptyState("No hay reservas recientes.") }
+                } else {
+                    item { RecentBookingsTable(items = uiState.recentBookings) }
+                }
+                item { Spacer(Modifier.height(28.dp)) }
+
+                item {
+                    SectionHeader("Últimas Reseñas")
+                    Spacer(Modifier.height(12.dp))
+                }
+                if (uiState.recentReviews.isEmpty()) {
+                    item { EmptyState("Aún no tienes reseñas.") }
+                } else {
+                    items(uiState.recentReviews) { review ->
+                        ReviewQuoteCard(review = review)
+                        Spacer(Modifier.height(12.dp))
+                    }
+                }
+                item { Spacer(Modifier.height(24.dp)) }
+            }
         }
-
-        Spacer(Modifier.height(22.dp))
-
-        // Sección: Reservas recientes (tabla dentro de card celeste pálido)
-        Text(
-            text = "Reservas recientes",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = TextPrimary
-        )
-        Spacer(Modifier.height(8.dp))
-
-        RecentBookingsTable(
-            items = recent,
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(Modifier.height(22.dp))
-
-        // Sección: Últimas reseñas
-        Text(
-            text = "Últimas reseñas",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = TextPrimary
-        )
-        Spacer(Modifier.height(10.dp))
-
-        // Dos tarjetas apiladas
-        reviews.take(2).forEachIndexed { i, r ->
-            ReviewQuoteCard(review = r)
-            if (i == 0) Spacer(Modifier.height(12.dp))
-        }
-
-        Spacer(Modifier.height(22.dp))
     }
 }
 
-// ======================
-// Componentes
-// ======================
+@Composable
+private fun SectionHeader(title: String) {
+    Text(
+        text = title,
+        fontSize = 20.sp,
+        fontWeight = FontWeight.SemiBold,
+        color = TextPrimary
+    )
+}
 
 @Composable
 private fun KpiCard(
     number: String,
-    line1: String,
-    line2: String,
+    label: String,
     container: Color,
-    textOn: Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    textOn: Color = Color.White
 ) {
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = container),
-        modifier = modifier.heightIn(min = 84.dp)
+        modifier = modifier
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(16.dp)
+                .heightIn(min = 72.dp),
+            verticalArrangement = Arrangement.Center
         ) {
             Text(
                 text = number,
-                fontSize = 28.sp,
+                fontSize = 26.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = textOn
             )
-            Spacer(Modifier.width(14.dp))
-            Column {
-                Text(line1, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = textOn)
-                Text(line2, fontSize = 13.sp, color = textOn.copy(alpha = 0.9f))
-            }
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = label,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = textOn,
+                lineHeight = 18.sp,
+                minLines = 2
+            )
         }
     }
 }
 
 @Composable
-private fun RecentBookingsTable(
-    items: List<BookingUi>,
-    modifier: Modifier = Modifier
-) {
+private fun RecentBookingsTable(items: List<BookingUi>) {
     Card(
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = TealLight),
-        border = BorderStroke(1.dp, BorderLight),
-        modifier = modifier
+        border = BorderStroke(1.dp, BorderLight)
     ) {
-        Column(Modifier.padding(12.dp)) {
-            // encabezados
-            Row(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(vertical = 8.dp, horizontal = 12.dp)) {
+            Row(Modifier.padding(bottom = 8.dp)) {
                 TableHeaderCell("Viajero", Modifier.weight(1f))
-                TableHeaderCell("Experiencia", Modifier.weight(1.2f))
-                TableHeaderCell("Fecha", Modifier.weight(0.8f))
+                TableHeaderCell("Experiencia", Modifier.weight(1.5f))
                 TableHeaderCell("Estado", Modifier.weight(0.8f))
             }
-            Spacer(Modifier.height(6.dp))
-
-            items.forEach { b ->
+            items.forEach { booking ->
                 Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 6.dp)
+                    Modifier.padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    TableBodyCell(b.traveler, Modifier.weight(1f))
-                    TableBodyCell(b.experience, Modifier.weight(1.2f), maxLines = 2)
-                    TableBodyCell(b.date, Modifier.weight(0.8f))
-                    TableBodyCell(b.status, Modifier.weight(0.8f))
+                    TableBodyCell(booking.traveler, Modifier.weight(1f))
+                    TableBodyCell(booking.experience, Modifier.weight(1.5f), maxLines = 2)
+                    TableBodyCell(booking.status, Modifier.weight(0.8f))
                 }
             }
         }
@@ -324,32 +210,26 @@ private fun RecentBookingsTable(
 }
 
 @Composable
-private fun TableHeaderCell(
-    text: String,
-    modifier: Modifier = Modifier
-) {
+private fun TableHeaderCell(text: String, modifier: Modifier = Modifier) {
     Text(
         text = text,
-        modifier = modifier.padding(horizontal = 6.dp),
+        modifier = modifier,
         fontSize = 13.sp,
-        fontWeight = FontWeight.SemiBold,
-        color = TextPrimary
+        fontWeight = FontWeight.Bold,
+        color = TextPrimary.copy(alpha = 0.8f)
     )
 }
 
 @Composable
-private fun TableBodyCell(
-    text: String,
-    modifier: Modifier = Modifier,
-    maxLines: Int = 1
-) {
+private fun TableBodyCell(text: String, modifier: Modifier = Modifier, maxLines: Int = 1) {
     Text(
         text = text,
-        modifier = modifier.padding(horizontal = 6.dp),
-        fontSize = 13.sp,
+        modifier = modifier,
+        fontSize = 14.sp,
         color = TextPrimary,
         maxLines = maxLines,
-        overflow = TextOverflow.Ellipsis
+        overflow = TextOverflow.Ellipsis,
+        lineHeight = 18.sp
     )
 }
 
@@ -362,11 +242,12 @@ private fun ReviewQuoteCard(review: ReviewUi) {
     ) {
         Column(Modifier.padding(16.dp)) {
             Text(
-                text = review.comment, // ya viene con comillas “”
-                fontSize = 14.sp,
-                color = TextPrimary
+                text = review.comment,
+                fontSize = 15.sp,
+                color = TextPrimary,
+                lineHeight = 22.sp
             )
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(12.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = "— ${review.author}",
@@ -374,7 +255,7 @@ private fun ReviewQuoteCard(review: ReviewUi) {
                     fontWeight = FontWeight.SemiBold,
                     color = TextPrimary
                 )
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.weight(1f))
                 StarsRow(count = review.rating)
             }
         }
@@ -383,24 +264,34 @@ private fun ReviewQuoteCard(review: ReviewUi) {
 
 @Composable
 private fun StarsRow(count: Int) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        repeat(count.coerceIn(0,5)) { Text("★", color = Color(0xFFFFC107)) }
-        repeat((5 - count.coerceIn(0,5))) { Text("☆", color = Color(0xFFFFC107)) }
+    Row {
+        repeat(count) { Text("★", color = Color(0xFFFFC107), fontSize = 16.sp) }
+        repeat(5 - count) { Text("★", color = BorderLight, fontSize = 16.sp) }
     }
 }
 
 @Composable
 private fun LoadingState() {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        CircularProgressIndicator()
+    }
+}
+
+@Composable
+private fun ErrorState(message: String) {
+    Box(Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center) {
+        Text(text = message, color = Color.Red)
+    }
+}
+
+@Composable
+private fun EmptyState(message: String) {
     Box(
         Modifier
-            .fillMaxSize()
-            .padding(32.dp),
+            .fillMaxWidth()
+            .padding(vertical = 24.dp),
         contentAlignment = Alignment.Center
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            androidx.compose.material3.CircularProgressIndicator()
-            Spacer(Modifier.height(12.dp))
-            Text("Cargando panel de control...", color = TextSecondary)
-        }
+        Text(text = message, color = TextSecondary)
     }
 }

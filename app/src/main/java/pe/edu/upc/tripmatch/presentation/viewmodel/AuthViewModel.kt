@@ -12,7 +12,6 @@ import pe.edu.upc.tripmatch.data.model.SignUpCommand
 import pe.edu.upc.tripmatch.data.repository.AuthRepository
 import pe.edu.upc.tripmatch.domain.model.User
 
-// El AuthUiState no necesita cambios, está perfecto.
 data class AuthUiState(
     val email: String = "",
     val password: String = "",
@@ -24,7 +23,9 @@ data class AuthUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val successMessage: String? = null,
-    val currentUser: User? = null
+    val currentUser: User? = null,
+    val avatarUrl: String? = null
+
 )
 
 sealed class AuthEvent {
@@ -43,11 +44,9 @@ class AuthViewModel(
     val event: StateFlow<AuthEvent?> = _event.asStateFlow()
 
     init {
-        // Restaurar sesión al abrir la app
         viewModelScope.launch {
             val savedUser = repository.getCurrentUser()
             if (savedUser != null) {
-                // Accedemos directamente a las propiedades del usuario, ¡sin reflexión!
                 val isAgencyFlag = mapIsAgency(savedUser.role)
                 val displayName = savedUser.agencyName ?: "${savedUser.firstName} ${savedUser.lastName}".trim()
 
@@ -57,14 +56,13 @@ class AuthViewModel(
                         role = savedUser.role,
                         isAgency = isAgencyFlag,
                         name = displayName,
-                        email = savedUser.email // El email del usuario logueado
+                        email = savedUser.email
                     )
                 }
             }
         }
     }
 
-    // --- Setters de formulario (sin cambios, están bien) ---
     fun setEmail(value: String) { _uiState.update { it.copy(email = value, errorMessage = null, successMessage = null) } }
     fun setPassword(value: String) { _uiState.update { it.copy(password = value, errorMessage = null, successMessage = null) } }
     fun setName(value: String) { _uiState.update { it.copy(name = value, errorMessage = null, successMessage = null) } }
@@ -72,7 +70,6 @@ class AuthViewModel(
     fun setConfirmPassword(value: String) { _uiState.update { it.copy(confirmPassword = value, errorMessage = null, successMessage = null) } }
     fun setIsAgency(value: Boolean) { _uiState.update { it.copy(isAgency = value, errorMessage = null, successMessage = null) } }
 
-    // --- Acciones ---
     fun onSignIn() {
         val current = uiState.value
         if (current.isLoading) return
@@ -99,8 +96,8 @@ class AuthViewModel(
                         role = user.role,
                         isAgency = isAgencyFlag,
                         name = displayName,
-                        email = "", // <-- SOLUCIÓN: Limpiamos el email del formulario
-                        password = "", // <-- SOLUCIÓN: Limpiamos el password del formulario
+                        email = "",
+                        password = "",
                         errorMessage = null
                     )
                 }
@@ -113,8 +110,6 @@ class AuthViewModel(
     }
 
     fun onSignUp() {
-        // Tu lógica de onSignUp está bien, no necesita cambios mayores.
-        // Solo asegúrate de limpiar los campos si lo deseas después del éxito.
         val state = uiState.value
         if (state.isLoading) return
         val name = state.name.trim()
@@ -160,7 +155,6 @@ class AuthViewModel(
                     it.copy(
                         isLoading = false,
                         successMessage = "Cuenta creada con éxito. Inicie sesión.",
-                        // Opcional: limpiar campos tras registro exitoso
                         name = "", email = "", number = "", password = "", confirmPassword = ""
                     )
                 }
@@ -174,26 +168,14 @@ class AuthViewModel(
 
     fun logout() {
         repository.logout()
-        // Resetea al estado inicial
         _uiState.value = AuthUiState()
     }
 
-    // --- Limpieza de eventos y mensajes ---
     fun clearSuccessMessage() { _uiState.update { it.copy(successMessage = null) } }
     fun clearEvent() { _event.value = null }
 
-    // --- Helpers simplificados ---
     private fun mapIsAgency(role: String?): Boolean {
-        // Es más robusto y simple verificar si contiene la palabra clave
         return role?.contains("agency", ignoreCase = true) == true
     }
 
-    // -----------------------------------------------------------
-    // FUNCIONES ELIMINADAS:
-    // - extractRole(user: Any?)
-    // - extractName(user: Any?)
-    // - extractEmail(user: Any?)
-    // - tryGetString(target: Any, methodOrField: String)
-    // Ya no son necesarias, hacemos acceso directo a las propiedades del objeto User.
-    // -----------------------------------------------------------
 }
