@@ -15,6 +15,7 @@ data class ManageExperiencesUiState(
     val experiences: List<Experience> = emptyList(),
     val error: String? = null,
     val showDeleteDialog: Boolean = false,
+    val successMessage: String? = null,
     val experienceToDelete: Experience? = null
 )
 
@@ -32,36 +33,55 @@ class ManageExperiencesViewModel(
 
     fun loadAgencyExperiences() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
+            _uiState.update { it.copy(isLoading = true, error = null) }
+
             val agencyId = authViewModel.uiState.value.currentUser?.id
-            if (agencyId == null) {
-                _uiState.update { it.copy(isLoading = false, error = "No se pudo verificar la agencia.") }
+            val token = authViewModel.uiState.value.currentUser?.token
+
+            if (agencyId.isNullOrEmpty() || token.isNullOrEmpty()) {
+                _uiState.update { it.copy(isLoading = false, error = "Error de sesión: ID o Token de agencia no disponible.") }
+                Log.e("ManageExpViewModel", "Agency ID is null or empty. Current ID: $agencyId")
                 return@launch
             }
+
+
             try {
                 val experiences = experienceRepository.getExperiencesForAgency(agencyId)
                 _uiState.update { it.copy(isLoading = false, experiences = experiences) }
+                Log.i("ManageExpViewModel", "Experiencias cargadas: ${experiences.size}")
             } catch (e: Exception) {
-                // --- CAMBIO CLAVE AQUÍ ---
-                // Imprimimos el error real en la consola de Logcat
-                Log.e("ManageExpViewModel", "Error al cargar experiencias de la agencia", e)
-
-                _uiState.update { it.copy(isLoading = false, error = "Error al cargar las experiencias.") }
+                Log.e("ManageExpViewModel", "Error al cargar experiencias de la agencia: ${e.message}", e)
+                _uiState.update { it.copy(isLoading = false, error = "Error al cargar las experiencias. Detalles: ${e.message}") }
             }
         }
     }
 
     fun onConfirmDelete() {
-        val experience = _uiState.value.experienceToDelete
-        println("Eliminando experiencia: ${experience?.title}")
+        val experience = _uiState.value.experienceToDelete ?: return
 
-        // Cerramos el diálogo y actualizamos la lista (simulado por ahora)
-        _uiState.update { currentState ->
-            currentState.copy(
-                showDeleteDialog = false,
-                experienceToDelete = null,
-                experiences = currentState.experiences.filter { it.id != experience?.id }
-            )
+        _uiState.update { it.copy(showDeleteDialog = false, experienceToDelete = null, isLoading = true, error = null, successMessage = null) }
+
+        viewModelScope.launch {
+            try {
+                experienceRepository.deleteExperience(experience.id)
+
+                _uiState.update { currentState ->
+                    currentState.copy(
+                        isLoading = false,
+                        experiences = currentState.experiences.filter { it.id != experience.id },
+                        successMessage = "¡Experiencia '${experience.title}' eliminada con éxito!"
+                    )
+                }
+
+            } catch (e: Exception) {
+                Log.e("ManageExpViewModel", "Error al eliminar experiencia: ${e.message}", e)
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        error = "Error al eliminar. Detalle: ${e.message}",
+                    )
+                }
+            }
         }
     }
 
@@ -71,5 +91,9 @@ class ManageExperiencesViewModel(
 
     fun dismissDeleteDialog() {
         _uiState.update { it.copy(showDeleteDialog = false, experienceToDelete = null) }
+    }
+
+    fun clearMessages() {
+        _uiState.update { it.copy(successMessage = null, error = null) }
     }
 }

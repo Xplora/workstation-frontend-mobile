@@ -58,8 +58,8 @@ fun ExperienceCard(
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        // Aquí puedes formatear una fecha real si la tienes
-                        text = "13 de agosto | 2:00pm",
+
+                        text = "${experience.categoryName} • ${experience.frequencies}",
                         color = TextGrey,
                         fontSize = 14.sp
                     )
@@ -80,7 +80,7 @@ fun ExperienceCard(
                 OutlinedButton(
                     onClick = onDelete,
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(50), // "Pill" shape
+                    shape = RoundedCornerShape(50),
                     colors = ButtonDefaults.outlinedButtonColors(
                         contentColor = TurquoiseDark
                     ),

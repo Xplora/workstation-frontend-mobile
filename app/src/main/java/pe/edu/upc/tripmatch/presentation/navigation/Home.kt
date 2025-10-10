@@ -190,7 +190,7 @@ fun MainAppContent(authViewModel: AuthViewModel) {
                 if (isAgency) {
                     AgencyDashboardScreen()
                 } else {
-                    ExperienceListScreen()
+                    TouristDashboardScreen()
                 }
             }
 
@@ -216,7 +216,11 @@ fun MainAppContent(authViewModel: AuthViewModel) {
                     )
                 }
                 composable("create_experience") {
-                    Text("Aquí irá el formulario para CREAR una nueva experiencia")
+                    CreateExperienceScreen(
+                        onExperienceCreated = {
+                            navController.popBackStack()
+                        }
+                    )
                 }
                 composable("edit_experience/{experienceId}") { backStackEntry ->
                     val experienceId = backStackEntry.arguments?.getString("experienceId")
@@ -315,7 +319,7 @@ fun Home() {
     if (uiState.currentUser == null) {
         AuthScreen(
             authViewModel = authViewModel,
-            onLoginSuccess = { /* La recomposición se encarga */ }
+            onLoginSuccess = {  }
         )
     } else {
         MainAppContent(authViewModel = authViewModel)
