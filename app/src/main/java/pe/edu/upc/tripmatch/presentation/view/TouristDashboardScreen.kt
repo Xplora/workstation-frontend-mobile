@@ -1,5 +1,3 @@
-// File: pe.edu.upc.tripmatch.presentation.view/TouristHomeScreen.kt
-
 package pe.edu.upc.tripmatch.presentation.view
 
 import androidx.compose.foundation.BorderStroke
@@ -60,7 +58,6 @@ fun TouristDashboardScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
                 .padding(horizontal = 16.dp),
             contentPadding = PaddingValues(top = 16.dp, bottom = 80.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -68,9 +65,7 @@ fun TouristDashboardScreen(
 
 
             item {
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 16.dp)) {
-                    Text("TripMatch", fontSize = 24.sp, fontWeight = FontWeight.Black, color = TurquoiseDark)
-                }
+
                 Text(
                     "Hola, $userName",
                     fontSize = 28.sp,

@@ -4,7 +4,12 @@ data class AgencyProfileDto(
     val agencyName: String,
     val ruc: String?,
     val description: String?,
-    val avatarUrl: String?
+    val avatarUrl: String?,
+    val contactEmail: String?,
+    val contactPhone: String?,
+    val socialLinkFacebook: String?,
+    val socialLinkInstagram: String?,
+    val socialLinkWhatsapp: String?
 )
 
 data class ReviewDto(

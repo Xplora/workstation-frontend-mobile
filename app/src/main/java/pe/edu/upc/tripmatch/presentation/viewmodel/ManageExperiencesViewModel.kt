@@ -34,24 +34,18 @@ class ManageExperiencesViewModel(
     fun loadAgencyExperiences() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
-
             val agencyId = authViewModel.uiState.value.currentUser?.id
-            val token = authViewModel.uiState.value.currentUser?.token
 
-            if (agencyId.isNullOrEmpty() || token.isNullOrEmpty()) {
-                _uiState.update { it.copy(isLoading = false, error = "Error de sesión: ID o Token de agencia no disponible.") }
-                Log.e("ManageExpViewModel", "Agency ID is null or empty. Current ID: $agencyId")
+            if (agencyId.isNullOrEmpty()) {
+                _uiState.update { it.copy(isLoading = false, error = "Error de sesión.") }
                 return@launch
             }
-
 
             try {
                 val experiences = experienceRepository.getExperiencesForAgency(agencyId)
                 _uiState.update { it.copy(isLoading = false, experiences = experiences) }
-                Log.i("ManageExpViewModel", "Experiencias cargadas: ${experiences.size}")
             } catch (e: Exception) {
-                Log.e("ManageExpViewModel", "Error al cargar experiencias de la agencia: ${e.message}", e)
-                _uiState.update { it.copy(isLoading = false, error = "Error al cargar las experiencias. Detalles: ${e.message}") }
+                _uiState.update { it.copy(isLoading = false, error = "Error al cargar experiencias: ${e.message}") }
             }
         }
     }

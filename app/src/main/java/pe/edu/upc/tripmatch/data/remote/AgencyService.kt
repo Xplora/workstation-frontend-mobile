@@ -4,9 +4,11 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import pe.edu.upc.tripmatch.common.ApiConstants
 import pe.edu.upc.tripmatch.data.model.*
+import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.Path
+import retrofit2.http.PUT
 
 interface AgencyService {
 
@@ -28,6 +30,8 @@ interface AgencyService {
     @GET("api/v1/profile/user/{userId}")
     suspend fun getUserDetails(@Path("userId") userId: String, @Header("Authorization") token: String): UserDetailsDto
 
+    @PUT("api/v1/profile/user/agency/{userId}")
+    suspend fun updateAgencyProfile(@Path("userId") userId: String, @Header("Authorization") token: String, @Body payload: UpdateAgencyProfilePayload): AgencyProfileDto
 
     companion object {
         fun create(): AgencyService {

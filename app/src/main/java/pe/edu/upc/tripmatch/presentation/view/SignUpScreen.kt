@@ -229,7 +229,7 @@ fun SignUpScreen(
 
 @Composable
 private fun LoginSignUpToggle(
-    selected: Int, // 0 = Login, 1 = Sign Up
+    selected: Int,
     onSelectLogin: () -> Unit,
     onSelectSignUp: () -> Unit
 ) {

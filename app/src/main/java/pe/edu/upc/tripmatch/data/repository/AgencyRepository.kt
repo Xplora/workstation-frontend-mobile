@@ -4,10 +4,14 @@ import android.util.Log
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import pe.edu.upc.tripmatch.data.model.AgencyProfileDto
+import pe.edu.upc.tripmatch.data.model.UpdateAgencyProfilePayload
+import pe.edu.upc.tripmatch.data.model.UserDetailsDto
 import pe.edu.upc.tripmatch.data.remote.AgencyService
 import pe.edu.upc.tripmatch.presentation.viewmodel.AgencyStatsUi
 import pe.edu.upc.tripmatch.presentation.viewmodel.BookingUi
 import pe.edu.upc.tripmatch.presentation.viewmodel.ReviewUi
+import retrofit2.HttpException
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -20,72 +24,110 @@ data class AgencyDashboardData(
 
 class AgencyRepository(private val agencyService: AgencyService) {
 
-    suspend fun getDashboardData(agencyId: String, token: String): AgencyDashboardData = coroutineScope {
-        val bearerToken = "Bearer $token"
+    private fun isNotFoundException(e: Throwable) = e is HttpException && e.code() == 404
 
-        val profileDeferred = async { agencyService.getAgencyProfile(agencyId, bearerToken) }
-        val reviewsDeferred = async { agencyService.getReviewsByAgencyId(agencyId, bearerToken) }
-        val inquiriesDeferred = async {
-            try {
-                agencyService.getAllInquiries(bearerToken)
-            } catch (e: Exception) {
-                Log.w("AgencyRepository", "La llamada a /inquiry falló con 404. Se asumirá 0 consultas. Error: ${e.message}")
-                emptyList()
+    suspend fun getAgencyProfile(userId: String, token: String): AgencyProfileDto {
+        return try {
+            val bearerToken = "Bearer $token"
+            agencyService.getAgencyProfile(userId, bearerToken)
+        } catch (e: Exception) {
+            if (isNotFoundException(e)) {
+                AgencyProfileDto("Nueva Agencia", null, "Completa tu descripción...", null, null, null, null, null, null)
+            } else {
+                throw e
             }
         }
+    }
 
-        val bookingsDeferred = async { agencyService.getAllBookings(bearerToken) }
-        val experiencesDeferred = async { agencyService.getExperiencesByAgencyId(agencyId, bearerToken) }
+    suspend fun getDashboardData(agencyId: String, token: String): AgencyDashboardData {
+        val bearerToken = "Bearer $token"
+        return try {
+            coroutineScope {
+                val profileDeferred = async { getAgencyProfile(agencyId, token) }
+                val reviewsDeferred = async {
+                    try { agencyService.getReviewsByAgencyId(agencyId, bearerToken) } catch (e: Exception) { if(isNotFoundException(e)) emptyList() else throw e }
+                }
+                val inquiriesDeferred = async {
+                    try { agencyService.getAllInquiries(bearerToken) } catch (e: Exception) { if(isNotFoundException(e)) emptyList() else throw e }
+                }
+                val bookingsDeferred = async {
+                    try { agencyService.getAllBookings(bearerToken) } catch (e: Exception) { if(isNotFoundException(e)) emptyList() else throw e }
+                }
+                val experiencesDeferred = async {
+                    try { agencyService.getExperiencesByAgencyId(agencyId, bearerToken) } catch (e: Exception) { if(isNotFoundException(e)) emptyList() else throw e }
+                }
 
-        val agencyProfile = profileDeferred.await()
-        val allReviews = reviewsDeferred.await()
-        val allInquiries = inquiriesDeferred.await()
-        val allBookings = bookingsDeferred.await()
-        val agencyExperiences = experiencesDeferred.await()
+                val agencyProfile = profileDeferred.await()
+                val allReviewsDto = reviewsDeferred.await()
+                val allInquiries = inquiriesDeferred.await()
+                val allBookingsDto = bookingsDeferred.await()
+                val agencyExperiences = experiencesDeferred.await()
+                val agencyExperienceIds = agencyExperiences.map { it.id }.toSet()
+                val agencyBookingsDto = allBookingsDto.filter { agencyExperienceIds.contains(it.experienceId) }
+                val newQueries = allInquiries.count { it.isAnswered == false }
+                val totalEarnings = agencyBookingsDto.sumOf { it.price }
+                val formattedEarnings = NumberFormat.getCurrencyInstance(Locale("es", "PE")).format(totalEarnings)
 
-        val agencyExperienceIds = agencyExperiences.map { it.id }.toSet()
-        val agencyBookings = allBookings.filter { agencyExperienceIds.contains(it.experienceId) }
+                val stats = AgencyStatsUi(
+                    confirmedBookings = agencyBookingsDto.size,
+                    newQueries = newQueries,
+                    totalExperiences = agencyExperiences.size,
+                    totalEarnings = formattedEarnings
+                )
 
-        val newQueries = allInquiries.count { it.isAnswered == false }
-        val totalEarnings = agencyBookings.sumOf { it.price }
-        val formattedEarnings = NumberFormat.getCurrencyInstance(Locale("es", "PE")).format(totalEarnings)
+                val mappedReviews = allReviewsDto.take(5).map { reviewDto ->
+                    val touristDetails = try {
+                        agencyService.getUserDetails(reviewDto.touristUserId, bearerToken)
+                    } catch (e: Exception) {
+                        UserDetailsDto(
+                            "Viajero",
+                            "Anónimo",
+                            null,
+                            null
+                        )
+                    }
+                    ReviewUi(
+                        author = "${touristDetails.firstName} ${touristDetails.lastName}",
+                        comment = reviewDto.comment,
+                        rating = reviewDto.rating.toInt()
+                    )
+                }
 
-        val stats = AgencyStatsUi(
-            confirmedBookings = agencyBookings.size,
-            newQueries = newQueries,
-            totalExperiences = agencyExperiences.size,
-            totalEarnings = formattedEarnings
-        )
+                val mappedBookings = agencyBookingsDto.take(5).map { bookingDto ->
+                    val travelerDetails = try {
+                        agencyService.getUserDetails(bookingDto.touristId, bearerToken)
+                    } catch (e: Exception) {
+                        UserDetailsDto("Viajero", "Anónimo", null, null)
+                    }
+                    val experienceDetails = agencyExperiences.find { it.id == bookingDto.experienceId }
 
-        val recentReviews = allReviews.take(2).map { review ->
-            async {
-                val touristDetails = agencyService.getUserDetails(review.touristUserId, bearerToken)
-                ReviewUi(
-                    author = "${touristDetails.firstName} ${touristDetails.lastName}".trim(),
-                    comment = review.comment,
-                    rating = review.rating.toInt()
+                    BookingUi(
+                        traveler = "${travelerDetails.firstName} ${travelerDetails.lastName}",
+                        experience = experienceDetails?.title ?: "Experiencia Desconocida",
+                        date = bookingDto.bookingDate,
+                        status = "Confirmada"
+                    )
+                }
+
+                AgencyDashboardData(
+                    agencyName = agencyProfile.agencyName,
+                    stats = stats,
+                    recentBookings = mappedBookings,
+                    recentReviews = mappedReviews
                 )
             }
-        }.awaitAll()
-
-        val recentBookings = agencyBookings.take(2).map { booking ->
-            async {
-                val touristDetails = agencyService.getUserDetails(booking.touristId, bearerToken)
-                val experience = agencyExperiences.find { it.id == booking.experienceId }
-                BookingUi(
-                    traveler = "${touristDetails.firstName} ${touristDetails.lastName}".trim(),
-                    experience = experience?.title ?: "Experiencia Desconocida",
-                    date = "N/A",
-                    status = "Confirmado"
-                )
+        } catch (e: Exception) {
+            Log.e("AgencyRepository", "Error cargando datos del dashboard", e)
+            if (isNotFoundException(e)) {
+                AgencyDashboardData("Agencia", AgencyStatsUi(), emptyList(), emptyList())
+            } else {
+                throw e
             }
-        }.awaitAll()
+        }
+    }
 
-        return@coroutineScope AgencyDashboardData(
-            agencyName = agencyProfile.agencyName,
-            stats = stats,
-            recentBookings = recentBookings,
-            recentReviews = recentReviews
-        )
+    suspend fun updateProfile(userId: String, token: String, payload: UpdateAgencyProfilePayload): AgencyProfileDto {
+        val bearerToken = "Bearer $token"
+        return agencyService.updateAgencyProfile(userId, bearerToken, payload)
     }
 }

@@ -5,7 +5,7 @@ data class SignUpCommand(
     val lastName: String,
     val number: String,
     val email: String,
-    val password: String, // Rol debe ser "tourist" o "agency"
+    val password: String,
     val rol: String,
     val agencyName: String? = null,
     val ruc: String? = null

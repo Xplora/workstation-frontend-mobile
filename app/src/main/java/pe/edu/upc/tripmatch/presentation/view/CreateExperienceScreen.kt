@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
@@ -20,11 +22,12 @@ import pe.edu.upc.tripmatch.presentation.di.PresentationModule
 import pe.edu.upc.tripmatch.presentation.viewmodel.CreateExperienceViewModel
 
 private val TurquoiseDark = Color(0xFF67B7B6)
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateExperienceScreen(
     viewModel: CreateExperienceViewModel = PresentationModule.getCreateExperienceViewModel(),
-    onExperienceCreated: () -> Unit
+    onExperienceCreated: () -> Unit,
+    onNavigateBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -47,6 +50,37 @@ fun CreateExperienceScreen(
     }
 
     Scaffold(
+        topBar = {
+
+            TopAppBar(
+
+                title = { Text("Nueva Experiencia") },
+
+                navigationIcon = {
+
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Volver"
+                        )
+
+                    }
+
+                },
+
+                colors = TopAppBarDefaults.topAppBarColors(
+
+                    containerColor = Color.White,
+
+                    titleContentColor = Color.Black,
+
+                    navigationIconContentColor = Color.Black
+
+                )
+
+            )
+
+        },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         containerColor = Color.White
     ) { padding ->

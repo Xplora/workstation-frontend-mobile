@@ -1,15 +1,15 @@
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 
 package pe.edu.upc.tripmatch.presentation.navigation
-
+import android.util.Log
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -30,6 +30,12 @@ import pe.edu.upc.tripmatch.R
 import pe.edu.upc.tripmatch.presentation.di.PresentationModule
 import pe.edu.upc.tripmatch.presentation.view.*
 import pe.edu.upc.tripmatch.presentation.viewmodel.AuthViewModel
+import androidx.lifecycle.ViewModelStoreOwner
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
+import kotlinx.coroutines.launch
+import pe.edu.upc.tripmatch.presentation.viewmodel.AgencyProfileViewModel
 
 data class NavigationItem(val title: String, val route: String)
 
@@ -37,7 +43,7 @@ data class NavigationItem(val title: String, val route: String)
 private fun AppBarCompact(
     onOpenProfile: () -> Unit,
     onLogout: () -> Unit,
-    avatarUrl: String? = null
+    avatarUrl: String?
 ) {
     Surface(
         color = Color.White,
@@ -75,12 +81,23 @@ private fun AppBarCompact(
                     onClick = onOpenProfile,
                     modifier = Modifier.size(40.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Filled.AccountCircle,
-                        contentDescription = "Perfil",
-                        tint = Color(0xFF58636A),
-                        modifier = Modifier.size(32.dp)
-                    )
+                    if (!avatarUrl.isNullOrEmpty()) {
+                        AsyncImage(
+                            model = avatarUrl,
+                            contentDescription = "Foto de perfil",
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Filled.AccountCircle,
+                            contentDescription = "Perfil",
+                            tint = Color(0xFF58636A),
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
                 }
 
                 IconButton(onClick = onLogout) {
@@ -104,7 +121,13 @@ fun MainAppContent(authViewModel: AuthViewModel) {
 
     val Teal = Color(0xFF318C8B)
     val TextSecondary = Color(0xFF58636A)
-
+    val profileViewModel: AgencyProfileViewModel = viewModel(
+        factory = PresentationModule.getAgencyProfileViewModelFactory()
+    )
+    val profileUiState by profileViewModel.uiState.collectAsState()
+    LaunchedEffect(Unit) {
+        profileViewModel.loadProfileData()
+    }
     val bottomNavItems = if (isAgency) {
         listOf(
             NavigationItem("Inicio", "home"),
@@ -126,17 +149,22 @@ fun MainAppContent(authViewModel: AuthViewModel) {
     Scaffold(
         containerColor = Color(0xFFF5F5F5),
         topBar = {
-            AppBarCompact(
-                onOpenProfile = {
-                    navController.navigate("profile") {
-                        launchSingleTop = true
-                    }
-                },
-                onLogout = { authViewModel.logout() }
-            )
+            if (currentRoute != "profile" && currentRoute != "edit_agency_profile") {
+                Log.d("HomeDebug", "URL para AppBar: ${profileUiState.agencyProfile?.avatarUrl}")
+
+                AppBarCompact(
+                    onOpenProfile = {
+                        navController.navigate("profile") {
+                            launchSingleTop = true
+                        }
+                    },
+                    onLogout = { authViewModel.logout() },
+                    avatarUrl = profileUiState.agencyProfile?.avatarUrl
+                )
+            }
         },
         bottomBar = {
-            if (currentRoute != "profile") {
+            if (currentRoute != "profile" && currentRoute != "edit_agency_profile") {
                 NavigationBar(
                     containerColor = Color.White,
                     contentColor = Teal,
@@ -219,6 +247,9 @@ fun MainAppContent(authViewModel: AuthViewModel) {
                     CreateExperienceScreen(
                         onExperienceCreated = {
                             navController.popBackStack()
+                        },
+                        onNavigateBack = {
+                            navController.popBackStack()
                         }
                     )
                 }
@@ -237,9 +268,34 @@ fun MainAppContent(authViewModel: AuthViewModel) {
             }
 
             composable("profile") {
-                ProfileScreen(
-                    isAgency = isAgency,
-                    onNavigateBack = {
+                val profileViewModel: AgencyProfileViewModel = viewModel(
+                    factory = PresentationModule.getAgencyProfileViewModelFactory()
+                )
+                LaunchedEffect(navController.currentBackStackEntry) {
+                    profileViewModel.loadProfileData()
+                }
+
+                if (isAgency) {
+                    AgencyProfileScreen(
+                        viewModel = profileViewModel,
+                        onNavigateBack = {
+                            navController.popBackStack()
+                        },
+                        onEditProfile = {
+                            navController.navigate("edit_agency_profile")
+                        }
+                    )
+                } else {
+                    Text("Tourist Profile Screen")
+                }
+            }
+
+            composable("edit_agency_profile") {
+                EditAgencyProfileScreen(
+                    onSaveSuccess = {
+                        navController.popBackStack()
+                    },
+                    onCancel = {
                         navController.popBackStack()
                     }
                 )
@@ -248,68 +304,6 @@ fun MainAppContent(authViewModel: AuthViewModel) {
     }
 }
 
-@Composable
-fun ProfileScreen(
-    isAgency: Boolean,
-    onNavigateBack: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onNavigateBack) {
-                Icon(
-                    imageVector = Icons.Filled.ArrowBack,
-                    contentDescription = "Volver",
-                    tint = Color(0xFF318C8B)
-                )
-            }
-            Text(
-                text = "Mi Perfil",
-                fontWeight = FontWeight.Bold,
-                fontSize = 24.sp,
-                modifier = Modifier.padding(start = 8.dp)
-            )
-        }
-
-        Spacer(Modifier.height(24.dp))
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color.White)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.AccountCircle,
-                    contentDescription = null,
-                    modifier = Modifier.size(80.dp),
-                    tint = Color(0xFF318C8B)
-                )
-                Spacer(Modifier.height(16.dp))
-                Text(
-                    text = if (isAgency) "Perfil de Agencia" else "Perfil de Turista",
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 18.sp
-                )
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    text = "Aquí irá la información del usuario",
-                    color = Color(0xFF58636A),
-                    fontSize = 14.sp
-                )
-            }
-        }
-        Spacer(Modifier.height(16.dp))
-        Text("Configuración y opciones adicionales...", color = Color.Gray)
-    }
-}
 
 @Composable
 fun Home() {
