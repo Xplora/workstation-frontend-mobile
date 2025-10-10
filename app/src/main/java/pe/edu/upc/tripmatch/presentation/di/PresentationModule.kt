@@ -9,23 +9,28 @@ import pe.edu.upc.tripmatch.data.remote.ExperienceService
 import pe.edu.upc.tripmatch.data.repository.AuthRepository
 import pe.edu.upc.tripmatch.data.repository.ExperienceRepository
 import pe.edu.upc.tripmatch.presentation.viewmodel.AuthViewModel
-import pe.edu.upc.tripmatch.presentation.viewmodel.ExperienceListViewModel
+import pe.edu.upc.tripmatch.presentation.viewmodel.TouristDashboardViewModel
 import pe.edu.upc.tripmatch.data.remote.AgencyService
+import pe.edu.upc.tripmatch.data.remote.CategoryService
 import pe.edu.upc.tripmatch.data.repository.AgencyRepository
 import pe.edu.upc.tripmatch.presentation.viewmodel.AgencyDashboardViewModel
+import pe.edu.upc.tripmatch.presentation.viewmodel.CreateExperienceViewModel
 import pe.edu.upc.tripmatch.presentation.viewmodel.ManageExperiencesViewModel
 
 object PresentationModule {
     private var _manageExperiencesViewModel: ManageExperiencesViewModel? = null
+    private var _createExperienceViewModel: CreateExperienceViewModel? = null
     private lateinit var db: AppDatabase
     private lateinit var expDao: ExperienceDao
     private lateinit var expService: ExperienceService
+
+    private lateinit var categoryService: CategoryService
     private lateinit var authService: AuthService
     private lateinit var expRepository: ExperienceRepository
     private lateinit var authRepository: AuthRepository
 
     private var _authViewModel: AuthViewModel? = null
-    private var _experienceListViewModel: ExperienceListViewModel? = null
+    private var _touristDashboardViewModel: TouristDashboardViewModel? = null
 
     private lateinit var agencyService: AgencyService
 
@@ -36,11 +41,14 @@ object PresentationModule {
         if (!::db.isInitialized) {
             db = Room.databaseBuilder(context, AppDatabase::class.java, "tripmatch_db").build()
             expDao = db.experienceDao()
-            expService = ExperienceService.create()
-            authService = AuthService.create()
 
-            expRepository = ExperienceRepository(expDao, expService)
+            expService = ExperienceService.create(context)
+            authService = AuthService.create()
+            categoryService = CategoryService.create(context)
+
+            expRepository = ExperienceRepository(expDao, expService, categoryService)
             authRepository = AuthRepository(authService, context)
+            expRepository = ExperienceRepository(expDao, expService, categoryService)
             agencyService = AgencyService.create()
             agencyRepository = AgencyRepository(agencyService)
         }
@@ -49,7 +57,7 @@ object PresentationModule {
 
         _agencyDashboardViewModel = null
         _manageExperiencesViewModel = null
-        _experienceListViewModel = null
+        _touristDashboardViewModel = null
     }
     fun getAuthViewModel(): AuthViewModel {
         val existing = _authViewModel
@@ -65,11 +73,13 @@ object PresentationModule {
         _manageExperiencesViewModel = created
         return created
     }
-    fun getExperienceListViewModel(): ExperienceListViewModel {
-        val existing = _experienceListViewModel
+    fun getTouristDashboardViewModel(): TouristDashboardViewModel {
+        val existing = _touristDashboardViewModel
         if (existing != null) return existing
-        val created = ExperienceListViewModel(expRepository)
-        _experienceListViewModel = created
+
+        val created = TouristDashboardViewModel(expRepository, getAuthViewModel())
+
+        _touristDashboardViewModel = created
         return created
     }
     fun getAgencyDashboardViewModel(): AgencyDashboardViewModel {
@@ -77,6 +87,14 @@ object PresentationModule {
         if (existing != null) return existing
         val created = AgencyDashboardViewModel(agencyRepository, getAuthViewModel())
         _agencyDashboardViewModel = created
+        return created
+    }
+
+    fun getCreateExperienceViewModel(): CreateExperienceViewModel {
+        val existing = _createExperienceViewModel
+        if (existing != null) return existing
+        val created = CreateExperienceViewModel(expRepository, getAuthViewModel())
+        _createExperienceViewModel = created
         return created
     }
 }

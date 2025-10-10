@@ -1,23 +1,43 @@
 package pe.edu.upc.tripmatch.data.repository
 
 import pe.edu.upc.tripmatch.data.local.dao.ExperienceDao
+import pe.edu.upc.tripmatch.data.model.CreateExperienceCommand
 import pe.edu.upc.tripmatch.data.model.ExperienceMapper.toDomain
 import pe.edu.upc.tripmatch.data.model.ExperienceMapper.toEntity
+import pe.edu.upc.tripmatch.data.remote.CategoryService
 import pe.edu.upc.tripmatch.data.remote.ExperienceService
 import pe.edu.upc.tripmatch.domain.model.Experience
 
 class ExperienceRepository(
     private val experienceDao: ExperienceDao,
-    private val experienceService: ExperienceService
+    private val experienceService: ExperienceService,
+    private val categoryService: CategoryService
 ) {
 
-
+    suspend fun getCategories(): List<String> {
+        return categoryService.getAllCategories().map { it.name }
+    }
     suspend fun getExperiences(): List<Experience> {
         val apiExperiences = experienceService.getExperiences()
         return apiExperiences.map { dto ->
             val domain = dto.toDomain()
             domain.isFavorite = isFavorite(domain.id)
             domain
+        }
+    }
+
+    suspend fun deleteExperience(experienceId: Int) {
+        val response = experienceService.deleteExperience(experienceId)
+        if (!response.isSuccessful) {
+            throw Exception("Fallo al eliminar la experiencia. Código: ${response.code()}")
+        }
+
+    }
+
+    suspend fun createExperience(command: CreateExperienceCommand) {
+        val response = experienceService.createExperience(command)
+        if (!response.isSuccessful) {
+            throw Exception("Fallo al crear la experiencia. Código: ${response.code()}")
         }
     }
 
@@ -38,10 +58,14 @@ class ExperienceRepository(
                 location = entity.location,
                 duration = entity.duration,
                 price = entity.price,
-                frequencies = "",
-                categoryId = 0,
+                frequencies = entity.frequencies,
+                categoryId = entity.categoryId,
                 categoryName = entity.categoryName,
                 agencyName = entity.agencyName,
+
+                experienceImages = entity.experienceImages,
+                schedule = entity.schedule,
+                includes = entity.includes,
                 isFavorite = true
             )
         }

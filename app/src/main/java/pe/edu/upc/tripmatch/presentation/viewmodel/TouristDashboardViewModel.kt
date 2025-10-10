@@ -11,8 +11,9 @@ import pe.edu.upc.tripmatch.data.model.ExperienceMapper.toDomain
 import pe.edu.upc.tripmatch.data.repository.ExperienceRepository
 import pe.edu.upc.tripmatch.domain.model.Experience
 
-class ExperienceListViewModel(
-    private val repository: ExperienceRepository
+class TouristDashboardViewModel(
+    private val repository: ExperienceRepository,
+    private val authViewModel: AuthViewModel
 ) : ViewModel() {
 
     private val _experiences = MutableStateFlow<List<Experience>>(emptyList())
@@ -21,6 +22,42 @@ class ExperienceListViewModel(
     private val _favorites = MutableStateFlow<List<Experience>>(emptyList())
     val favorites: StateFlow<List<Experience>> get() = _favorites.asStateFlow()
 
+    private val _userName = MutableStateFlow("Turista")
+    val userName: StateFlow<String> = _userName.asStateFlow()
+
+    private val _categories = MutableStateFlow<List<String>>(emptyList())
+    val categories: StateFlow<List<String>> = _categories.asStateFlow()
+
+    init {
+        loadUserName()
+        loadCategories()
+    }
+
+    private fun loadUserName() {
+        viewModelScope.launch {
+            authViewModel.uiState.collect { authState ->
+                val name = authState.currentUser?.firstName ?: "Turista"
+                val firstName = name.split(" ").firstOrNull() ?: "Turista"
+                if (_userName.value != firstName) {
+                    _userName.value = firstName
+                }
+            }
+        }
+    }
+
+    private fun loadCategories() {
+        viewModelScope.launch {
+            try {
+
+                val remoteCategories = repository.getCategories()
+                _categories.value = remoteCategories
+
+            } catch (e: Exception) {
+                println("Error loading categories: ${e.message}")
+                _categories.value = listOf("Error al cargar")
+            }
+        }
+    }
     fun loadExperiences() {
         viewModelScope.launch {
             try {

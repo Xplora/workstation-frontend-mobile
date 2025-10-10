@@ -11,6 +11,11 @@ data class FavoriteExperienceEntity(
     val location: String,
     val duration: Int,
     val price: Double,
+    val frequencies: String,
+    val categoryId: Int,
     val categoryName: String,
-    val agencyName: String
+    val agencyName: String,
+    val experienceImages: List<String>,
+    val includes: List<String>,
+    val schedule: List<String>
 )

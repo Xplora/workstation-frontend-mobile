@@ -7,8 +7,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -26,7 +28,22 @@ fun ManageExperiencesScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // Diálogo de confirmación para eliminar
+    LaunchedEffect(Unit) {
+        viewModel.loadAgencyExperiences()
+    }
+
+    uiState.successMessage?.let { message ->
+        val snackbarHostState = remember { SnackbarHostState() }
+        LaunchedEffect(message) {
+            snackbarHostState.showSnackbar(
+                message = message,
+                duration = SnackbarDuration.Short
+            )
+            viewModel.clearMessages()
+        }
+    }
+
+
     if (uiState.showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { viewModel.dismissDeleteDialog() },
@@ -55,7 +72,11 @@ fun ManageExperiencesScreen(
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Añadir Experiencia", tint = Color.White)
             }
+        },
+        snackbarHost = {
+            SnackbarHost(hostState = remember { SnackbarHostState() })
         }
+
     ) { padding ->
 
         if (uiState.isLoading) {
@@ -67,7 +88,7 @@ fun ManageExperiencesScreen(
 
         if (uiState.error != null) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(uiState.error!!, color = Color.Red)
+                Text("Error: ${uiState.error!!}", color = Color.Red, modifier = Modifier.padding(24.dp))
             }
             return@Scaffold
         }

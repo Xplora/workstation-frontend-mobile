@@ -1,6 +1,8 @@
 package pe.edu.upc.tripmatch.presentation.view
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -11,11 +13,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import pe.edu.upc.tripmatch.presentation.di.PresentationModule
-import pe.edu.upc.tripmatch.presentation.viewmodel.ExperienceListViewModel
+import pe.edu.upc.tripmatch.presentation.viewmodel.TouristDashboardViewModel
 
 @Composable
 fun FavoritesScreen(
-    viewModel: ExperienceListViewModel = PresentationModule.getExperienceListViewModel()
+    viewModel: TouristDashboardViewModel = PresentationModule.getTouristDashboardViewModel()
 ) {
 
     LaunchedEffect(Unit) { viewModel.loadFavorites() }
@@ -25,17 +27,19 @@ fun FavoritesScreen(
 
         Text(
             "No tienes experiencias favoritas guardadas.",
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(24.dp)
         )
     } else {
         LazyColumn(
-            modifier = Modifier.padding(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(favorites.value, key = { it.id }) { experience ->
-                ExperienceListItemView(experience) {
-                    viewModel.toggleFavorite(experience)
-                }
+                ExperienceCardTourits(
+                    experience = experience,
+                    onToggleFavorite = { viewModel.toggleFavorite(experience) }
+                )
             }
         }
     }

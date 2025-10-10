@@ -8,7 +8,7 @@ import pe.edu.upc.tripmatch.data.remote.AuthService
 import pe.edu.upc.tripmatch.domain.model.User
 
 class AuthRepository(
-    private val authService: AuthService,
+    private val authService: AuthService?,
     context: Context
 ) {
     private val prefs: SharedPreferences = context.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE)
@@ -21,7 +21,8 @@ class AuthRepository(
     }
 
     suspend fun signIn(command: SignInCommand): User {
-        val response = authService.signIn(command)
+        val service = authService ?: throw IllegalStateException("AuthService no disponible para signIn.")
+        val response = service.signIn(command)
 
         val user = User(
             id = response.id,
@@ -35,7 +36,8 @@ class AuthRepository(
     }
 
     suspend fun signUp(command: SignUpCommand) {
-        authService.signUp(command)
+        val service = authService ?: throw IllegalStateException("AuthService no disponible para signUp.")
+        service.signUp(command)
     }
 
     private fun saveAuthData(user: User) {
