@@ -232,10 +232,8 @@ fun MainAppContent(authViewModel: AuthViewModel) {
                     )
                 }
                 composable("bookings") {
-                    Text(
-                        "Pantalla de Reservas",
-                        modifier = Modifier.padding(16.dp)
-                    )
+                    val bookingsViewModel = remember { PresentationModule.getBookingsViewModel() }
+                    BookingsScreen(viewModel = bookingsViewModel)
                 }
                 composable("queries") {
                     Text(

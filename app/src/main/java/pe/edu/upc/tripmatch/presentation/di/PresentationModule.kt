@@ -17,11 +17,13 @@ import pe.edu.upc.tripmatch.data.remote.CategoryService
 import pe.edu.upc.tripmatch.data.repository.AgencyRepository
 import pe.edu.upc.tripmatch.presentation.viewmodel.AgencyDashboardViewModel
 import pe.edu.upc.tripmatch.presentation.viewmodel.AgencyProfileViewModel
+import pe.edu.upc.tripmatch.presentation.viewmodel.BookingsViewModel
 import pe.edu.upc.tripmatch.presentation.viewmodel.CreateExperienceViewModel
 import pe.edu.upc.tripmatch.presentation.viewmodel.EditAgencyProfileViewModel
 import pe.edu.upc.tripmatch.presentation.viewmodel.ManageExperiencesViewModel
 
 object PresentationModule {
+    private var _bookingsViewModel: BookingsViewModel? = null
     private var _manageExperiencesViewModel: ManageExperiencesViewModel? = null
     private var _createExperienceViewModel: CreateExperienceViewModel? = null
     private lateinit var db: AppDatabase
@@ -66,6 +68,7 @@ object PresentationModule {
         _touristDashboardViewModel = null
         _agencyProfileViewModel = null
         _editAgencyProfileViewModel = null
+        _bookingsViewModel = null
     }
     fun getAuthViewModel(): AuthViewModel {
         val existing = _authViewModel
@@ -126,6 +129,14 @@ object PresentationModule {
         if (existing != null) return existing
         val created = AgencyProfileViewModel(agencyRepository, getAuthViewModel())
         _agencyProfileViewModel = created
+        return created
+    }
+    fun getBookingsViewModel(): BookingsViewModel {
+        val existing = _bookingsViewModel
+        if (existing != null) return existing
+
+        val created = BookingsViewModel(agencyRepository, getAuthViewModel())
+        _bookingsViewModel = created
         return created
     }
 }

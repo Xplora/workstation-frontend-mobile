@@ -125,7 +125,42 @@ class AgencyRepository(private val agencyService: AgencyService) {
             }
         }
     }
+    suspend fun getBookingsForAgency(agencyId: String, token: String): List<pe.edu.upc.tripmatch.domain.model.Booking> {
+        val bearerToken = "Bearer $token"
+        return try {
+            coroutineScope {
+                val bookingsDeferred = async { agencyService.getAllBookings(bearerToken) }
+                val experiencesDeferred = async { agencyService.getExperiencesByAgencyId(agencyId, bearerToken) }
 
+                val allBookingsDto = bookingsDeferred.await()
+                val agencyExperiences = experiencesDeferred.await()
+                val agencyExperienceIds = agencyExperiences.map { it.id }.toSet()
+
+                val agencyBookingsDto = allBookingsDto.filter { agencyExperienceIds.contains(it.experienceId) }
+
+                agencyBookingsDto.map { bookingDto ->
+                    val travelerDetails = try {
+                        agencyService.getUserDetails(bookingDto.touristId, bearerToken)
+                    } catch (e: Exception) {
+                        UserDetailsDto("Viajero", "Anónimo", null, null)
+                    }
+                    val experienceDetails = agencyExperiences.find { it.id == bookingDto.experienceId }
+
+                    pe.edu.upc.tripmatch.domain.model.Booking(
+                        travelerName = "${travelerDetails.firstName} ${travelerDetails.lastName}",
+                        travelerImage = travelerDetails.avatarUrl,
+                        experienceName = experienceDetails?.title ?: "Experiencia Desconocida",
+                        date = bookingDto.bookingDate,
+                        people = bookingDto.numberOfPeople,
+                        totalPaid = bookingDto.price
+                    )
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("AgencyRepository", "Error cargando las reservas", e)
+            throw e
+        }
+    }
     suspend fun updateProfile(userId: String, token: String, payload: UpdateAgencyProfilePayload): AgencyProfileDto {
         val bearerToken = "Bearer $token"
         return agencyService.updateAgencyProfile(userId, bearerToken, payload)
