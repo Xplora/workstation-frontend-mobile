@@ -236,10 +236,7 @@ fun MainAppContent(authViewModel: AuthViewModel) {
                     BookingsScreen(viewModel = bookingsViewModel)
                 }
                 composable("queries") {
-                    Text(
-                        "Pantalla de Consultas",
-                        modifier = Modifier.padding(16.dp)
-                    )
+                    QueriesScreen()
                 }
                 composable("create_experience") {
                     CreateExperienceScreen(

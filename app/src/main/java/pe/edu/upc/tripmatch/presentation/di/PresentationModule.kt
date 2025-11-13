@@ -14,13 +14,16 @@ import pe.edu.upc.tripmatch.presentation.viewmodel.AuthViewModel
 import pe.edu.upc.tripmatch.presentation.viewmodel.TouristDashboardViewModel
 import pe.edu.upc.tripmatch.data.remote.AgencyService
 import pe.edu.upc.tripmatch.data.remote.CategoryService
+import pe.edu.upc.tripmatch.data.remote.InquiryService
 import pe.edu.upc.tripmatch.data.repository.AgencyRepository
+import pe.edu.upc.tripmatch.data.repository.InquiryRepository
 import pe.edu.upc.tripmatch.presentation.viewmodel.AgencyDashboardViewModel
 import pe.edu.upc.tripmatch.presentation.viewmodel.AgencyProfileViewModel
 import pe.edu.upc.tripmatch.presentation.viewmodel.BookingsViewModel
 import pe.edu.upc.tripmatch.presentation.viewmodel.CreateExperienceViewModel
 import pe.edu.upc.tripmatch.presentation.viewmodel.EditAgencyProfileViewModel
 import pe.edu.upc.tripmatch.presentation.viewmodel.ManageExperiencesViewModel
+import pe.edu.upc.tripmatch.presentation.viewmodel.QueriesViewModel
 
 object PresentationModule {
     private var _bookingsViewModel: BookingsViewModel? = null
@@ -30,11 +33,15 @@ object PresentationModule {
     private lateinit var expDao: ExperienceDao
     private lateinit var expService: ExperienceService
 
+    private lateinit var inquiryService: InquiryService
+
     private var _editAgencyProfileViewModel: EditAgencyProfileViewModel? = null
     private lateinit var categoryService: CategoryService
     private lateinit var authService: AuthService
     private lateinit var expRepository: ExperienceRepository
     private lateinit var authRepository: AuthRepository
+
+    private lateinit var inquiryRepository: InquiryRepository
 
     private var _authViewModel: AuthViewModel? = null
     private var _touristDashboardViewModel: TouristDashboardViewModel? = null
@@ -45,6 +52,9 @@ object PresentationModule {
 
     private var _agencyDashboardViewModel: AgencyDashboardViewModel? = null
     private var _agencyProfileViewModel: AgencyProfileViewModel? = null
+
+    private var _queriesViewModel: QueriesViewModel? = null
+
     fun init(context: Context) {
         if (!::db.isInitialized) {
             db = Room.databaseBuilder(context, AppDatabase::class.java, "tripmatch_db").fallbackToDestructiveMigration().build()
@@ -53,12 +63,14 @@ object PresentationModule {
             expService = ExperienceService.create(context)
             authService = AuthService.create()
             categoryService = CategoryService.create(context)
+            inquiryService = InquiryService.create(context)
 
             expRepository = ExperienceRepository(expDao, expService, categoryService)
             authRepository = AuthRepository(authService, context)
             expRepository = ExperienceRepository(expDao, expService, categoryService)
             agencyService = AgencyService.create()
             agencyRepository = AgencyRepository(agencyService)
+            inquiryRepository = InquiryRepository(inquiryService)
         }
     }
     fun onLogout() {
@@ -69,6 +81,7 @@ object PresentationModule {
         _agencyProfileViewModel = null
         _editAgencyProfileViewModel = null
         _bookingsViewModel = null
+        _queriesViewModel = null
     }
     fun getAuthViewModel(): AuthViewModel {
         val existing = _authViewModel
@@ -137,6 +150,14 @@ object PresentationModule {
 
         val created = BookingsViewModel(agencyRepository, getAuthViewModel())
         _bookingsViewModel = created
+        return created
+    }
+
+    fun getQueriesViewModel(): QueriesViewModel {
+        val existing = _queriesViewModel
+        if (existing != null) return existing
+        val created = QueriesViewModel(inquiryRepository, getAuthViewModel())
+        _queriesViewModel = created
         return created
     }
 }

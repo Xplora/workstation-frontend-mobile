@@ -20,11 +20,6 @@ data class ReviewDto(
     val rating: Double
 )
 
-data class InquiryDto(
-    val id: Int,
-    val isAnswered: Boolean? = null
-)
-
 data class BookingDto(
     val id: Int,
     val touristId: String,
