@@ -249,8 +249,20 @@ fun MainAppContent(authViewModel: AuthViewModel) {
                     )
                 }
                 composable("edit_experience/{experienceId}") { backStackEntry ->
-                    val experienceId = backStackEntry.arguments?.getString("experienceId")
-                    Text("Aquí irá el formulario para EDITAR la experiencia con ID: $experienceId")
+                    val experienceId = backStackEntry.arguments?.getString("experienceId")?.toIntOrNull()
+                    val manageViewModel = PresentationModule.getManageExperiencesViewModel()
+
+                    val uiState by manageViewModel.uiState.collectAsState()
+
+                    val experienceToEdit = uiState.experiences.find { it.id == experienceId }
+
+                    experienceToEdit?.let {
+                        CreateExperienceScreen(
+                            experienceToEdit = it,
+                            onExperienceCreated = { navController.popBackStack() },
+                            onNavigateBack = { navController.popBackStack() }
+                        )
+                    }
                 }
             } else {
                 composable("favorites") { FavoritesScreen() }

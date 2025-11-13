@@ -82,4 +82,12 @@ class ExperienceRepository(
             domain
         }
     }
+
+    suspend fun updateExperience(experienceId: Int, command: CreateExperienceCommand) {
+        val response = experienceService.updateExperience(experienceId, command)
+        if (!response.isSuccessful) {
+            throw Exception("Fallo al actualizar la experiencia. Código: ${response.code()}")
+        }
+    }
+
 }

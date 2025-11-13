@@ -87,7 +87,7 @@ fun QueriesScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
+
                 .padding(horizontal = 16.dp)
         ) {
             Spacer(Modifier.height(16.dp))

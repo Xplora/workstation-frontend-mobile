@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import pe.edu.upc.tripmatch.domain.model.Experience
 import pe.edu.upc.tripmatch.presentation.di.PresentationModule
 import pe.edu.upc.tripmatch.presentation.viewmodel.CreateExperienceViewModel
 
@@ -27,13 +28,22 @@ private val TurquoiseDark = Color(0xFF67B7B6)
 fun CreateExperienceScreen(
     viewModel: CreateExperienceViewModel = PresentationModule.getCreateExperienceViewModel(),
     onExperienceCreated: () -> Unit,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    experienceToEdit: Experience? = null
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     var imageUrlInput by remember { mutableStateOf("") }
     var newIncludeInput by remember { mutableStateOf("") }
 
+    val isEditing = experienceToEdit != null
+    LaunchedEffect(experienceToEdit) {
+        if (isEditing) {
+            viewModel.loadExperienceForEditing(experienceToEdit!!)
+        } else {
+            viewModel.resetState()
+        }
+    }
 
     LaunchedEffect(uiState.successMessage, uiState.errorMessage) {
         val message = uiState.successMessage ?: uiState.errorMessage
@@ -48,6 +58,8 @@ fun CreateExperienceScreen(
             }
         }
     }
+
+
 
     Scaffold(
         topBar = {
@@ -312,15 +324,24 @@ fun CreateExperienceScreen(
 
             item {
                 Button(
-                    onClick = { viewModel.createExperience(onExperienceCreated) },
-                    modifier = Modifier.fillMaxWidth().height(50.dp).padding(vertical = 4.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = TurquoiseDark),
-                    enabled = !uiState.isLoading
+                    onClick = {
+                        if (isEditing) {
+                            viewModel.saveExperience(
+                                onSuccess = onExperienceCreated,
+                                existingExperienceId = experienceToEdit.id
+                            )
+                        } else {
+                            viewModel.createExperience(onSuccess = onExperienceCreated)
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth().height(50.dp).padding(vertical = 4.dp)
                 ) {
-                    Text("Guardar Experiencia", fontSize = 18.sp)
+                    Text(if (isEditing) "Guardar Cambios" else "Guardar Experiencia")
                 }
             }
         }
     }
 }
+
+
 

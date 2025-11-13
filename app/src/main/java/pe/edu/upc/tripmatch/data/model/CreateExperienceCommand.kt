@@ -1,6 +1,7 @@
 package pe.edu.upc.tripmatch.data.model
 
 data class CreateExperienceCommand(
+    val id: Int? = null,
     val title: String,
     val description: String,
     val location: String,

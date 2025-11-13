@@ -11,6 +11,7 @@ import pe.edu.upc.tripmatch.data.model.ExperienceImage
 import pe.edu.upc.tripmatch.data.model.Include
 import pe.edu.upc.tripmatch.data.model.Schedule
 import pe.edu.upc.tripmatch.data.repository.ExperienceRepository
+import pe.edu.upc.tripmatch.domain.model.Experience
 
 data class CreateExperienceUiState(
     val title: String = "",
@@ -139,5 +140,74 @@ class CreateExperienceViewModel(
                 }
             }
         }
+    }
+
+    fun loadExperienceForEditing(experience: Experience) {
+        _uiState.update {
+            it.copy(
+                title = experience.title,
+                description = experience.description,
+                location = experience.location,
+                duration = experience.duration.toString(),
+                price = experience.price.toString(),
+                frequencies = experience.frequencies,
+                schedules = experience.schedule,
+                images = experience.experienceImages,
+                includes = experience.includes,
+                categoryId = experience.categoryId
+            )
+        }
+    }
+
+    fun saveExperience(onSuccess: () -> Unit, existingExperienceId: Int? = null) {
+        val state = _uiState.value
+        val agencyId = authViewModel.uiState.value.currentUser?.id
+
+        if (agencyId.isNullOrBlank()) {
+            _uiState.update { it.copy(errorMessage = "Error de sesión: ID de agencia no disponible.") }
+            return
+        }
+
+        if (state.title.isBlank() || state.description.isBlank() || state.price.toDoubleOrNull() == null
+            || state.schedules.isEmpty() || state.images.isEmpty() || state.categoryId == null) {
+            _uiState.update { it.copy(errorMessage = "Por favor, completa todos los campos requeridos.") }
+            return
+        }
+
+        val command = CreateExperienceCommand(
+            id = existingExperienceId ?: 0,
+            title = state.title,
+            description = state.description,
+            location = state.location,
+            duration = state.duration.toIntOrNull() ?: 1,
+            price = state.price.toDoubleOrNull() ?: 0.0,
+            frequencies = state.frequencies,
+            schedules = state.schedules.map { Schedule(it) },
+            experienceImages = state.images.map { ExperienceImage(it) },
+            includes = state.includes.map { Include(it) },
+            categoryId = state.categoryId!!,
+            agencyUserId = agencyId
+        )
+
+        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+
+        viewModelScope.launch {
+            try {
+                if (existingExperienceId != null) {
+                    repository.updateExperience(existingExperienceId, command)
+                    _uiState.update { it.copy(successMessage = "¡Experiencia '${command.title}' actualizada!", isLoading = false) }
+                } else {
+                    repository.createExperience(command)
+                    _uiState.update { it.copy(successMessage = "¡Experiencia '${command.title}' creada!", isLoading = false) }
+                }
+                onSuccess()
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isLoading = false, errorMessage = "Error: ${e.message}") }
+            }
+        }
+    }
+
+    fun resetState() {
+        _uiState.value = CreateExperienceUiState()
     }
 }

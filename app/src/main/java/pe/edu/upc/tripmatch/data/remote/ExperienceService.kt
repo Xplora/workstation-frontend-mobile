@@ -10,6 +10,7 @@ import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.PUT
 import retrofit2.http.Path
 
 interface ExperienceService {
@@ -40,4 +41,10 @@ interface ExperienceService {
             return retrofit.create(ExperienceService::class.java)
         }
     }
+
+    @PUT("api/v1/design/Experience/{id}")
+    suspend fun updateExperience(
+        @Path("id") id: Int,
+        @Body command: CreateExperienceCommand
+    ): Response<Unit>
 }
