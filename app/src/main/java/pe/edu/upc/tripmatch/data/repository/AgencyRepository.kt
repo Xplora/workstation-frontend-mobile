@@ -64,7 +64,7 @@ class AgencyRepository(private val agencyService: AgencyService) {
                 val agencyExperiences = experiencesDeferred.await()
                 val agencyExperienceIds = agencyExperiences.map { it.id }.toSet()
                 val agencyBookingsDto = allBookingsDto.filter { agencyExperienceIds.contains(it.experienceId) }
-                val newQueries = allInquiries.count { it.response == null }
+                val newQueries = allInquiries.count { !it.isAnswered }
                 val totalEarnings = agencyBookingsDto.sumOf { it.price }
                 val formattedEarnings = NumberFormat.getCurrencyInstance(Locale("es", "PE")).format(totalEarnings)
 

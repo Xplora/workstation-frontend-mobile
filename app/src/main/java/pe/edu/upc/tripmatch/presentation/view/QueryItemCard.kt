@@ -34,14 +34,16 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import pe.edu.upc.tripmatch.R
 import pe.edu.upc.tripmatch.domain.model.Query
+
 private val Teal = Color(0xFF318C8B)
 private val BackgroundGrey = Color(0xFFF5F5F5)
 private val TextSecondary = Color(0xFF58636A)
 private val BorderGrey = Color(0xFFE2E8F0)
+
 @Composable
 fun QueryItemCard(query: Query, onActionClick: (Query) -> Unit) {
-    val ActionButtonColor = if (query.isAnswered) Color.White else Teal
-    val ActionButtonTextColor = if (query.isAnswered) Teal else Color.White
+    val actionButtonColor = if (query.isAnswered) Color.White else Teal
+    val actionButtonTextColor = if (query.isAnswered) Teal else Color.White
 
     Card(
         modifier = Modifier
@@ -60,7 +62,7 @@ fun QueryItemCard(query: Query, onActionClick: (Query) -> Unit) {
 
             AsyncImage(
                 model = query.travelerAvatarUrl,
-                contentDescription = "Avatar de ${query.travelerName}",
+                contentDescription = "Avatar de ${query.travelerName.orEmpty()}",
                 modifier = Modifier
                     .size(48.dp)
                     .clip(CircleShape),
@@ -81,7 +83,9 @@ fun QueryItemCard(query: Query, onActionClick: (Query) -> Unit) {
                 Text(
                     text = query.experienceTitle.orEmpty(),
                     color = TextSecondary,
-                    fontSize = 13.sp
+                    fontSize = 13.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
                 Spacer(Modifier.height(8.dp))
 
@@ -102,7 +106,7 @@ fun QueryItemCard(query: Query, onActionClick: (Query) -> Unit) {
                     )
                     Spacer(Modifier.width(4.dp))
                     Text(
-                        text = query.askedAt.take(10),
+                        text = formatDisplayDate(query.askedAt),
                         color = TextSecondary,
                         fontSize = 12.sp
                     )
@@ -114,8 +118,8 @@ fun QueryItemCard(query: Query, onActionClick: (Query) -> Unit) {
             Button(
                 onClick = { onActionClick(query) },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = ActionButtonColor,
-                    contentColor = ActionButtonTextColor
+                    containerColor = actionButtonColor,
+                    contentColor = actionButtonTextColor
                 ),
                 border = if (query.isAnswered) BorderStroke(1.dp, Teal) else null,
                 contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
@@ -129,5 +133,19 @@ fun QueryItemCard(query: Query, onActionClick: (Query) -> Unit) {
                 )
             }
         }
+    }
+}
+private fun formatDisplayDate(dateTimeString: String?): String {
+    if (dateTimeString.isNullOrBlank()) return "Fecha desconocida"
+
+    return try {
+        val instant = java.time.Instant.parse(dateTimeString)
+        val formatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")
+            .withZone(java.time.ZoneId.systemDefault())
+        formatter.format(instant)
+    } catch (e: java.time.format.DateTimeParseException) {
+        dateTimeString.take(10)
+    } catch (e: Exception) {
+        dateTimeString.take(10)
     }
 }

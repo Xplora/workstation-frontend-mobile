@@ -6,25 +6,17 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
-import pe.edu.upc.tripmatch.R
 import pe.edu.upc.tripmatch.domain.model.Query
 import pe.edu.upc.tripmatch.presentation.di.PresentationModule
 import pe.edu.upc.tripmatch.presentation.viewmodel.QueriesViewModel
@@ -33,6 +25,7 @@ private val Teal = Color(0xFF318C8B)
 private val BackgroundGrey = Color(0xFFF5F5F5)
 private val TextSecondary = Color(0xFF58636A)
 private val BorderGrey = Color(0xFFE2E8F0)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QueriesScreen(
@@ -40,11 +33,7 @@ fun QueriesScreen(
 ) {
 
     val uiState by viewModel.uiState.collectAsState()
-
-
-    LaunchedEffect(Unit) {
-        viewModel.loadAgencyInquiries()
-    }
+    val TAG = "QueriesScreen"
 
     var searchText by remember { mutableStateOf("") }
     var filterState by remember { mutableStateOf("Sin responder") }
@@ -79,7 +68,6 @@ fun QueriesScreen(
         }
     }
 
-
     if (uiState.showResponseDialog && uiState.selectedQuery != null) {
         ResponseDialog(
             query = uiState.selectedQuery!!,
@@ -87,7 +75,7 @@ fun QueriesScreen(
             onAnswerChange = viewModel::updateResponseText,
             onConfirm = viewModel::sendResponse,
             onDismiss = viewModel::dismissResponseDialog,
-            isSending = uiState.isLoading
+            isSending = uiState.isSendingResponse
         )
     }
 
@@ -104,7 +92,6 @@ fun QueriesScreen(
         ) {
             Spacer(Modifier.height(16.dp))
 
-
             Text(
                 text = "Bandeja de Consultas",
                 fontWeight = FontWeight.ExtraBold,
@@ -117,7 +104,6 @@ fun QueriesScreen(
                 fontSize = 15.sp,
                 modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
             )
-
 
             OutlinedTextField(
                 value = searchText,
@@ -135,7 +121,6 @@ fun QueriesScreen(
             )
 
             Spacer(Modifier.height(12.dp))
-
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -160,36 +145,42 @@ fun QueriesScreen(
 
             Spacer(Modifier.height(16.dp))
 
-
             when {
                 uiState.isLoading && uiState.inquiries.isEmpty() -> {
+                    Log.d(TAG, "Mostrando estado: Carga Inicial")
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator(color = Teal)
                     }
                 }
                 uiState.error != null && uiState.inquiries.isEmpty() -> {
+                    Log.e(TAG, "Mostrando estado: Error de carga inicial - ${uiState.error}")
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text("Error: ${uiState.error}", color = Color.Red, modifier = Modifier.padding(24.dp))
                     }
                 }
-                filteredQueries.isEmpty() -> {
-                    Box(modifier = Modifier.fillMaxSize().padding(top = 32.dp), contentAlignment = Alignment.TopCenter) {
-                        Text(
-                            text = if (searchText.isNotEmpty()) "No hay resultados para la búsqueda." else "No hay consultas en el estado '${filterState}'.",
-                            color = TextSecondary
-                        )
-                    }
-                }
                 else -> {
-                    LazyColumn(
-                        contentPadding = PaddingValues(bottom = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(filteredQueries, key = { it.id }) { query ->
-                            QueryItemCard(
-                                query = query,
-                                onActionClick = { viewModel.openResponseDialog(it) }
+                    if (filteredQueries.isEmpty()) {
+                        Log.d(TAG, "Mostrando estado: Lista vacía / Sin resultados de filtro")
+                        Box(modifier = Modifier.fillMaxSize().padding(top = 32.dp), contentAlignment = Alignment.TopCenter) {
+                            Text(
+                                text = if (searchText.isNotEmpty()) "No hay resultados para la búsqueda."
+                                else if (uiState.inquiries.isEmpty()) "No tienes ninguna consulta."
+                                else "No hay consultas en el estado '${filterState}'.",
+                                color = TextSecondary
                             )
+                        }
+                    } else {
+                        Log.d(TAG, "Mostrando estado: Lista con ${filteredQueries.size} items")
+                        LazyColumn(
+                            contentPadding = PaddingValues(bottom = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(filteredQueries, key = { it.id }) { query ->
+                                QueryItemCard(
+                                    query = query,
+                                    onActionClick = { viewModel.openResponseDialog(it) }
+                                )
+                            }
                         }
                     }
                 }
@@ -230,7 +221,7 @@ fun ResponseDialog(
     onDismiss: () -> Unit,
     isSending: Boolean
 ) {
-    val isReadOnly = query.isAnswered
+    val isReadOnly = query.isAnswered && query.answer == currentAnswer
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -240,7 +231,7 @@ fun ResponseDialog(
         text = {
             Column {
                 Text(
-                    "Pregunta de ${query.travelerName} en ${query.experienceTitle}:",
+                    "Pregunta de ${query.travelerName.orEmpty()} en ${query.experienceTitle.orEmpty()}:",
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
@@ -254,7 +245,7 @@ fun ResponseDialog(
                     value = currentAnswer,
                     onValueChange = onAnswerChange,
                     label = { Text(if (isReadOnly) "Respuesta Enviada" else "Tu Respuesta") },
-                    readOnly = isReadOnly,
+                    readOnly = false,
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(min = 100.dp),
@@ -269,7 +260,7 @@ fun ResponseDialog(
                 )
                 if (query.isAnswered && query.answeredAt != null) {
                     Text(
-                        text = "Respondida el: ${query.answeredAt.take(10)}",
+                        text = "Respondida el: ${formatDisplayDate(query.answeredAt)}",
                         fontSize = 12.sp,
                         color = TextSecondary,
                         modifier = Modifier.padding(top = 4.dp)
@@ -278,17 +269,21 @@ fun ResponseDialog(
             }
         },
         confirmButton = {
-            if (!isReadOnly) {
-                Button(
-                    onClick = onConfirm,
-                    enabled = currentAnswer.isNotBlank() && !isSending,
-                    colors = ButtonDefaults.buttonColors(containerColor = Teal)
-                ) {
-                    if (isSending) {
-                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
-                    } else {
-                        Text(if (query.isAnswered) "Guardar Cambios" else "Enviar Respuesta")
-                    }
+            Button(
+                onClick = {
+                    Log.d("QueriesScreen", "Click en botón CONFIRMAR del diálogo")
+                    onConfirm()
+                },
+                enabled = currentAnswer.isNotBlank() && !isSending,
+                colors = ButtonDefaults.buttonColors(containerColor = Teal)
+            ) {
+                if (isSending) {
+                    CircularProgressIndicator(
+                        color = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                } else {
+                    Text(if (query.isAnswered) "Actualizar" else "Enviar")
                 }
             }
         },
@@ -298,4 +293,18 @@ fun ResponseDialog(
             }
         }
     )
+}
+private fun formatDisplayDate(dateTimeString: String?): String {
+    if (dateTimeString.isNullOrBlank()) return "Fecha desconocida"
+
+    return try {
+        val instant = java.time.Instant.parse(dateTimeString)
+        val formatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")
+            .withZone(java.time.ZoneId.systemDefault())
+        formatter.format(instant)
+    } catch (e: java.time.format.DateTimeParseException) {
+        dateTimeString.take(10)
+    } catch (e: Exception) {
+        dateTimeString.take(10)
+    }
 }

@@ -18,7 +18,10 @@ class InquiryRepository(
     suspend fun getAgencyInquiries(agencyId: String): List<Query> {
         val inquiries = inquiryService.getAgencyInquiries(agencyId)
         inquiries.forEach {
-            Log.d("InquiryCheck", "Inquiry ${it.id} -> response = ${it.response}")
+            Log.d(
+                "InquiryCheck",
+                "Inquiry ${it.id} -> isAnswered = ${it.isAnswered}, answer = ${it.answer}"
+            )
         }
         return inquiries.map { it.toDomain() }
     }

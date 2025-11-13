@@ -31,7 +31,7 @@ class BookingRepositoryImpl(
                     val travelerDetails = try {
                         agencyService.getUserDetails(bookingDto.touristId, bearerToken)
                     } catch (e: Exception) {
-                        UserDetailsDto("Viajero", "Anónimo", null, null) // Fallback
+                        UserDetailsDto("Viajero", "Anónimo", null, null)
                     }
                     val experienceDetails = agencyExperiences.find { it.id == bookingDto.experienceId }
 
