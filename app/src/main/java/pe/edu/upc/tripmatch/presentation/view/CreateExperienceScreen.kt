@@ -1,9 +1,11 @@
 package pe.edu.upc.tripmatch.presentation.view
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.ui.text.font.FontWeight
@@ -21,9 +23,14 @@ import androidx.compose.ui.unit.sp
 import pe.edu.upc.tripmatch.domain.model.Experience
 import pe.edu.upc.tripmatch.presentation.di.PresentationModule
 import pe.edu.upc.tripmatch.presentation.viewmodel.CreateExperienceViewModel
+import pe.edu.upc.tripmatch.ui.theme.AppBackground
+import pe.edu.upc.tripmatch.ui.theme.DividerColor
+import pe.edu.upc.tripmatch.ui.theme.TextPrimary
+import pe.edu.upc.tripmatch.ui.theme.TextSecondary
+import pe.edu.upc.tripmatch.ui.theme.TurquoiseDark
+import pe.edu.upc.tripmatch.ui.theme.TurquoiseLight
 
-private val TurquoiseDark = Color(0xFF67B7B6)
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun CreateExperienceScreen(
     viewModel: CreateExperienceViewModel = PresentationModule.getCreateExperienceViewModel(),
@@ -37,6 +44,8 @@ fun CreateExperienceScreen(
     var newIncludeInput by remember { mutableStateOf("") }
 
     val isEditing = experienceToEdit != null
+    val titleText = if (isEditing) "Editar Experiencia" else "Nueva Experiencia"
+
     LaunchedEffect(experienceToEdit) {
         if (isEditing) {
             viewModel.loadExperienceForEditing(experienceToEdit!!)
@@ -59,289 +68,428 @@ fun CreateExperienceScreen(
         }
     }
 
-
-
     Scaffold(
         topBar = {
-
             TopAppBar(
-
-                title = { Text("Nueva Experiencia") },
-
+                title = { Text(titleText, fontWeight = FontWeight.SemiBold) },
                 navigationIcon = {
-
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Volver"
                         )
-
                     }
-
                 },
-
                 colors = TopAppBarDefaults.topAppBarColors(
-
-                    containerColor = Color.White,
-
-                    titleContentColor = Color.Black,
-
-                    navigationIconContentColor = Color.Black
-
-                )
-
+                    containerColor = AppBackground,
+                    titleContentColor = TextPrimary,
+                    navigationIconContentColor = TextPrimary
+                ),
+                windowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top),
             )
-
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        containerColor = Color.White
+        containerColor = AppBackground
     ) { padding ->
-        if (uiState.isLoading) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = TurquoiseDark)
-            }
-        }
 
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 16.dp, vertical = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            item {
-                Text("Crear Nueva Experiencia", fontSize = 28.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                Spacer(Modifier.height(8.dp))
-                Text("Ingresa los detalles de tu nueva oferta.", color = Color.Gray)
-            }
-
-
-            item {
-                OutlinedTextField(
-                    value = uiState.title,
-                    onValueChange = { viewModel.updateField("title", it) },
-                    label = { Text("Título") },
-                    modifier = Modifier.fillMaxWidth(),
-                    isError = uiState.errorMessage != null && uiState.title.isBlank()
-                )
-            }
-            item {
-                OutlinedTextField(
-                    value = uiState.description,
-                    onValueChange = { viewModel.updateField("description", it) },
-                    label = { Text("Descripción") },
-                    modifier = Modifier.fillMaxWidth().height(120.dp),
-                    singleLine = false
-                )
-            }
-            item {
-                OutlinedTextField(
-                    value = uiState.location,
-                    onValueChange = { viewModel.updateField("location", it) },
-                    label = { Text("Ubicación") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    OutlinedTextField(
-                        value = uiState.duration,
-                        onValueChange = { viewModel.updateField("duration", it) },
-                        label = { Text("Duración (horas)") },
-                        modifier = Modifier.weight(1f),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        singleLine = true
+        Box(modifier = Modifier.fillMaxSize()) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(horizontal = 20.dp),
+                contentPadding = PaddingValues(top = 24.dp, bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                item {
+                    Text(
+                        titleText,
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
                     )
-                    OutlinedTextField(
-                        value = uiState.price,
-                        onValueChange = { viewModel.updateField("price", it) },
-                        label = { Text("Precio (S/)") },
-                        modifier = Modifier.weight(1f),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        singleLine = true,
-                        isError = uiState.errorMessage != null && uiState.price.toDoubleOrNull() == null
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "Ingresa los detalles de tu nueva oferta.",
+                        color = TextSecondary,
+                        fontSize = 16.sp
                     )
                 }
-            }
 
-
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-
-                    var expandedCategory by remember { mutableStateOf(false) }
-                    Box(Modifier.weight(1f)) {
-                        OutlinedTextField(
-                            value = viewModel.categoryOptions.find { it.first == uiState.categoryId }?.second ?: "Seleccionar Categoría",
-                            onValueChange = {},
-                            readOnly = true,
-                            label = { Text("Categoría") },
-                            trailingIcon = { Icon(Icons.Filled.Add, contentDescription = "Seleccionar", Modifier.clickable { expandedCategory = true }) }
+                item {
+                    StyledOutlinedTextField(
+                        value = uiState.title,
+                        onValueChange = { viewModel.updateField("title", it) },
+                        label = "Título",
+                        isError = uiState.errorMessage != null && uiState.title.isBlank()
+                    )
+                }
+                item {
+                    StyledOutlinedTextField(
+                        value = uiState.description,
+                        onValueChange = { viewModel.updateField("description", it) },
+                        label = "Descripción",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(120.dp),
+                        singleLine = false
+                    )
+                }
+                item {
+                    StyledOutlinedTextField(
+                        value = uiState.location,
+                        onValueChange = { viewModel.updateField("location", it) },
+                        label = "Ubicación"
+                    )
+                }
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        StyledOutlinedTextField(
+                            value = uiState.duration,
+                            onValueChange = { viewModel.updateField("duration", it) },
+                            label = "Duración (horas)",
+                            modifier = Modifier.weight(1f),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true
                         )
-                        DropdownMenu(
+                        StyledOutlinedTextField(
+                            value = uiState.price,
+                            onValueChange = { viewModel.updateField("price", it) },
+                            label = "Precio (S/)",
+                            modifier = Modifier.weight(1f),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            singleLine = true,
+                            isError = uiState.errorMessage != null && uiState.price.toDoubleOrNull() == null
+                        )
+                    }
+                }
+
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        var expandedCategory by remember { mutableStateOf(false) }
+                        ExposedDropdownMenuBox(
                             expanded = expandedCategory,
-                            onDismissRequest = { expandedCategory = false }
+                            onExpandedChange = { expandedCategory = !expandedCategory },
+                            modifier = Modifier.weight(1f)
                         ) {
-                            viewModel.categoryOptions.forEach { (id, name) ->
-                                DropdownMenuItem(
-                                    text = { Text(name) },
-                                    onClick = {
-                                        viewModel.updateField("categoryId", id)
-                                        expandedCategory = false
-                                    }
-                                )
+                            StyledOutlinedTextField(
+                                value = viewModel.categoryOptions.find { it.first == uiState.categoryId }?.second
+                                    ?: "",
+                                onValueChange = {},
+                                readOnly = true,
+                                label = "Categoría",
+                                placeholder = "Seleccionar",
+                                trailingIcon = {
+                                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedCategory)
+                                },
+                                modifier = Modifier.menuAnchor()
+                            )
+                            ExposedDropdownMenu(
+                                expanded = expandedCategory,
+                                onDismissRequest = { expandedCategory = false }
+                            ) {
+                                viewModel.categoryOptions.forEach { (id, name) ->
+                                    DropdownMenuItem(
+                                        text = { Text(name) },
+                                        onClick = {
+                                            viewModel.updateField("categoryId", id)
+                                            expandedCategory = false
+                                        }
+                                    )
+                                }
                             }
                         }
-                    }
 
-                    var expandedFreq by remember { mutableStateOf(false) }
-                    Box(Modifier.weight(1f)) {
-                        OutlinedTextField(
-                            value = uiState.frequencies.ifBlank { "Seleccionar Frecuencia" },
-                            onValueChange = {},
-                            readOnly = true,
-                            label = { Text("Frecuencia") },
-                            trailingIcon = { Icon(Icons.Filled.Add, contentDescription = "Seleccionar", Modifier.clickable { expandedFreq = true }) }
-                        )
-                        DropdownMenu(
+                        var expandedFreq by remember { mutableStateOf(false) }
+                        ExposedDropdownMenuBox(
                             expanded = expandedFreq,
-                            onDismissRequest = { expandedFreq = false }
+                            onExpandedChange = { expandedFreq = !expandedFreq },
+                            modifier = Modifier.weight(1f)
                         ) {
-                            viewModel.frequencyOptions.forEach { freq ->
-                                DropdownMenuItem(
-                                    text = { Text(freq) },
-                                    onClick = {
-                                        viewModel.updateField("frequencies", freq)
-                                        expandedFreq = false
-                                    }
-                                )
+                            StyledOutlinedTextField(
+                                value = uiState.frequencies,
+                                onValueChange = {},
+                                readOnly = true,
+                                label = "Frecuencia",
+                                placeholder = "Seleccionar",
+                                trailingIcon = {
+                                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedFreq)
+                                },
+                                modifier = Modifier.menuAnchor()
+                            )
+                            ExposedDropdownMenu(
+                                expanded = expandedFreq,
+                                onDismissRequest = { expandedFreq = false }
+                            ) {
+                                viewModel.frequencyOptions.forEach { freq ->
+                                    DropdownMenuItem(
+                                        text = { Text(freq) },
+                                        onClick = {
+                                            viewModel.updateField("frequencies", freq)
+                                            expandedFreq = false
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
                 }
-            }
 
-
-            item {
-                Text("Horarios Disponibles", style = MaterialTheme.typography.titleMedium)
-                FlowRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    viewModel.scheduleOptions.forEach { time ->
-                        val isSelected = uiState.schedules.contains(time)
-                        FilterChip(
-                            selected = isSelected,
-                            onClick = { viewModel.toggleSchedule(time) },
-                            label = { Text(time) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                containerColor = Color.LightGray.copy(alpha = 0.3f),
-                                labelColor = Color.DarkGray,
-                                iconColor = Color.DarkGray,
-                                selectedContainerColor = TurquoiseDark,
-                                selectedLabelColor = Color.White,
-                                selectedLeadingIconColor = Color.White
-                            )
-                        )
-                    }
-                }
-            }
-
-            item {
-                Text("¿Qué incluye? (Máx. 3)", style = MaterialTheme.typography.titleMedium)
-                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    OutlinedTextField(
-                        value = newIncludeInput,
-                        onValueChange = { newIncludeInput = it },
-                        label = { Text("Detalle de inclusión") },
-                        modifier = Modifier.weight(1f),
-                        singleLine = true,
-                        enabled = uiState.includes.size < 3
+                item {
+                    Text(
+                        "Horarios Disponibles",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
                     )
-                    Spacer(Modifier.width(8.dp))
-                    Button(
-                        onClick = {
-                            viewModel.addInclude(newIncludeInput)
-                            newIncludeInput = ""
-                        },
-                        enabled = newIncludeInput.isNotBlank() && uiState.includes.size < 3,
-                        colors = ButtonDefaults.buttonColors(containerColor = TurquoiseDark)
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = "Añadir")
-                    }
-                }
-                Spacer(Modifier.height(8.dp))
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    uiState.includes.forEachIndexed { index, item ->
-                        InputChip(
-                            selected = true,
-                            onClick = { /* No-op */ },
-                            label = { Text(item) },
-                            trailingIcon = {
-                                Icon(
-                                    Icons.Default.Close,
-                                    contentDescription = "Eliminar",
-                                    modifier = Modifier.size(18.dp).clickable { viewModel.removeInclude(index) }
-                                )
-                            }
-                        )
-                    }
-                }
-            }
-
-
-            item {
-                Text("Imágenes (URLs)", style = MaterialTheme.typography.titleMedium)
-                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    OutlinedTextField(
-                        value = imageUrlInput,
-                        onValueChange = { imageUrlInput = it },
-                        label = { Text("URL de Imagen") },
-                        modifier = Modifier.weight(1f),
-                        singleLine = true
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Button(
-                        onClick = {
-                            viewModel.addImage(imageUrlInput)
-                            imageUrlInput = ""
-                        },
-                        enabled = imageUrlInput.isNotBlank(),
-                        colors = ButtonDefaults.buttonColors(containerColor = TurquoiseDark)
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = "Añadir")
-                    }
-                }
-                Spacer(Modifier.height(8.dp))
-                Text("Imágenes añadidas: ${uiState.images.size}", style = MaterialTheme.typography.bodySmall)
-            }
-
-
-            item {
-                Button(
-                    onClick = {
-                        if (isEditing) {
-                            viewModel.saveExperience(
-                                onSuccess = onExperienceCreated,
-                                existingExperienceId = experienceToEdit.id
+                        viewModel.scheduleOptions.forEach { time ->
+                            ScheduleChip(
+                                time = time,
+                                isSelected = uiState.schedules.contains(time),
+                                onToggle = { viewModel.toggleSchedule(time) }
                             )
-                        } else {
-                            viewModel.createExperience(onSuccess = onExperienceCreated)
                         }
-                    },
-                    modifier = Modifier.fillMaxWidth().height(50.dp).padding(vertical = 4.dp)
+                    }
+                }
+
+                item {
+                    Text(
+                        "¿Qué incluye? (Máx. 3)",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        StyledOutlinedTextField(
+                            value = newIncludeInput,
+                            onValueChange = { newIncludeInput = it },
+                            label = "Detalle de inclusión",
+                            modifier = Modifier.weight(1f),
+                            singleLine = true,
+                            enabled = uiState.includes.size < 3
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Button(
+                            onClick = {
+                                viewModel.addInclude(newIncludeInput)
+                                newIncludeInput = ""
+                            },
+                            enabled = newIncludeInput.isNotBlank() && uiState.includes.size < 3,
+                            colors = ButtonDefaults.buttonColors(containerColor = TurquoiseDark),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = "Añadir")
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        uiState.includes.forEachIndexed { index, item ->
+                            androidx.compose.material3.InputChip(
+                                selected = true,
+                                onClick = { viewModel.removeInclude(index) },
+                                label = { Text(item) },
+                                enabled = true,
+                                colors = InputChipDefaults.inputChipColors(
+                                    containerColor = TurquoiseLight,
+                                    labelColor = TurquoiseDark,
+                                    trailingIconColor = TurquoiseDark
+                                ),
+                                trailingIcon = {
+                                    Icon(
+                                        Icons.Default.Close,
+                                        contentDescription = "Eliminar",
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            )
+                        }
+                    }
+                }
+
+                item {
+                    Text(
+                        "Imágenes (URLs)",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        StyledOutlinedTextField(
+                            value = imageUrlInput,
+                            onValueChange = { imageUrlInput = it },
+                            label = "URL de Imagen",
+                            modifier = Modifier.weight(1f),
+                            singleLine = true
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Button(
+                            onClick = {
+                                viewModel.addImage(imageUrlInput)
+                                imageUrlInput = ""
+                            },
+                            enabled = imageUrlInput.isNotBlank(),
+                            colors = ButtonDefaults.buttonColors(containerColor = TurquoiseDark),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = "Añadir")
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "Imágenes añadidas: ${uiState.images.size}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextSecondary
+                    )
+                }
+
+                item {
+                    Spacer(Modifier.height(16.dp))
+                    PrimaryActionButton(
+                        text = if (isEditing) "Guardar Cambios" else "Guardar Experiencia",
+                        isLoading = uiState.isLoading,
+                        onClick = {
+                            if (isEditing) {
+                                viewModel.saveExperience(
+                                    onSuccess = onExperienceCreated,
+                                    existingExperienceId = experienceToEdit!!.id
+                                )
+                            } else {
+                                viewModel.createExperience(onSuccess = onExperienceCreated)
+                            }
+                        }
+                    )
+                }
+            }
+
+            if (uiState.isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(AppBackground.copy(alpha = 0.5f))
+                        .clickable(enabled = false, onClick = {}),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text(if (isEditing) "Guardar Cambios" else "Guardar Experiencia")
+                    CircularProgressIndicator(color = TurquoiseDark)
                 }
             }
         }
     }
 }
 
+@Composable
+private fun StyledOutlinedTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    modifier: Modifier = Modifier,
+    singleLine: Boolean = true,
+    isError: Boolean = false,
+    placeholder: String? = null,
+    readOnly: Boolean = false,
+    enabled: Boolean = true,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    trailingIcon: @Composable (() -> Unit)? = null
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        placeholder = { placeholder?.let { Text(it) } },
+        modifier = modifier.fillMaxWidth(),
+        singleLine = singleLine,
+        isError = isError,
+        readOnly = readOnly,
+        enabled = enabled,
+        keyboardOptions = keyboardOptions,
+        trailingIcon = trailingIcon,
+        shape = RoundedCornerShape(12.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedTextColor = TextPrimary,
+            unfocusedTextColor = TextPrimary,
+            focusedContainerColor = AppBackground,
+            unfocusedContainerColor = AppBackground,
+            focusedBorderColor = TurquoiseDark,
+            unfocusedBorderColor = DividerColor,
+            cursorColor = TurquoiseDark,
+            focusedLabelColor = TextSecondary,
+            unfocusedLabelColor = TextSecondary,
+            disabledBorderColor = DividerColor.copy(alpha = 0.6f),
+            disabledLabelColor = TextSecondary.copy(alpha = 0.6f),
+            disabledTextColor = TextPrimary.copy(alpha = 0.6f),
+            disabledPlaceholderColor = TextSecondary.copy(alpha = 0.6f),
+            disabledTrailingIconColor = TextSecondary.copy(alpha = 0.6f),
+            disabledContainerColor = AppBackground.copy(alpha = 0.3f)
+        )
+    )
+}
 
+@Composable
+private fun ScheduleChip(
+    time: String,
+    isSelected: Boolean,
+    onToggle: () -> Unit
+) {
+    OutlinedButton(
+        onClick = onToggle,
+        shape = RoundedCornerShape(16.dp),
+        colors = ButtonDefaults.outlinedButtonColors(
+            containerColor = if (isSelected) TurquoiseDark else TurquoiseLight.copy(alpha = 0.5f),
+            contentColor = if (isSelected) Color.White else TurquoiseDark
+        ),
+        border = BorderStroke(
+            width = 1.dp,
+            color = if (isSelected) TurquoiseDark else TurquoiseLight
+        )
+    ) {
+        Text(time)
+    }
+}
 
+@Composable
+private fun PrimaryActionButton(
+    text: String,
+    isLoading: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Button(
+        onClick = onClick,
+        enabled = !isLoading,
+        modifier = modifier
+            .fillMaxWidth()
+            .height(50.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = TurquoiseDark,
+            contentColor = Color.White,
+            disabledContainerColor = TurquoiseDark.copy(alpha = 0.4f),
+            disabledContentColor = Color.White.copy(alpha = 0.9f)
+        ),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        if (isLoading) {
+            CircularProgressIndicator(
+                strokeWidth = 2.dp,
+                modifier = Modifier.size(20.dp),
+                color = Color.White
+            )
+        } else {
+            Text(text, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+        }
+    }
+}

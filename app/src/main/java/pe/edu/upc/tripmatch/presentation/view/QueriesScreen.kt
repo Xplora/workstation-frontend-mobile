@@ -25,6 +25,7 @@ private val Teal = Color(0xFF318C8B)
 private val BackgroundGrey = Color(0xFFF5F5F5)
 private val TextSecondary = Color(0xFF58636A)
 private val BorderGrey = Color(0xFFE2E8F0)
+private val TextPrimary = Color(0xFF1A202C)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,7 +68,6 @@ fun QueriesScreen(
             viewModel.clearMessages()
         }
     }
-
     if (uiState.showResponseDialog && uiState.selectedQuery != null) {
         ResponseDialog(
             query = uiState.selectedQuery!!,
@@ -87,7 +87,6 @@ fun QueriesScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-
                 .padding(horizontal = 16.dp)
         ) {
             Spacer(Modifier.height(16.dp))
@@ -96,7 +95,7 @@ fun QueriesScreen(
                 text = "Bandeja de Consultas",
                 fontWeight = FontWeight.ExtraBold,
                 fontSize = 28.sp,
-                color = Color.Black
+                color = TextPrimary
             )
             Text(
                 text = "Gestiona todas las preguntas que recibes de los viajeros.",
@@ -225,21 +224,29 @@ fun ResponseDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(16.dp),
+        containerColor = Color.White,
         title = {
-            Text(if (query.isAnswered) "Ver/Editar Respuesta" else "Responder Consulta")
+            Text(
+                text = if (query.isAnswered) "Ver/Editar Respuesta" else "Responder Consulta",
+                fontWeight = FontWeight.Bold,
+                fontSize = 22.sp,
+                color = TextPrimary
+            )
         },
         text = {
             Column {
                 Text(
                     "Pregunta de ${query.travelerName.orEmpty()} en ${query.experienceTitle.orEmpty()}:",
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    color = TextPrimary
                 )
                 Text(
                     query.question,
                     modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
-                    fontStyle = MaterialTheme.typography.bodyMedium.fontStyle
+                    fontStyle = MaterialTheme.typography.bodyMedium.fontStyle,
+                    color = TextSecondary
                 )
-
 
                 OutlinedTextField(
                     value = currentAnswer,
@@ -250,12 +257,18 @@ fun ResponseDialog(
                         .fillMaxWidth()
                         .heightIn(min = 100.dp),
                     maxLines = 5,
+                    shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = TextPrimary,
+                        unfocusedTextColor = TextPrimary,
+                        focusedContainerColor = BackgroundGrey.copy(alpha = 0.5f),
+                        unfocusedContainerColor = BackgroundGrey.copy(alpha = 0.5f),
                         focusedBorderColor = Teal,
                         unfocusedBorderColor = BorderGrey,
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.White,
-                        disabledContainerColor = Color(0xFFEFEFEF)
+                        cursorColor = Teal,
+                        focusedLabelColor = TextSecondary,
+                        unfocusedLabelColor = TextSecondary,
+                        disabledContainerColor = BackgroundGrey.copy(alpha = 0.3f)
                     )
                 )
                 if (query.isAnswered && query.answeredAt != null) {
@@ -275,7 +288,11 @@ fun ResponseDialog(
                     onConfirm()
                 },
                 enabled = currentAnswer.isNotBlank() && !isSending,
-                colors = ButtonDefaults.buttonColors(containerColor = Teal)
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Teal,
+                    disabledContainerColor = Teal.copy(alpha = 0.4f)
+                )
             ) {
                 if (isSending) {
                     CircularProgressIndicator(
@@ -288,12 +305,20 @@ fun ResponseDialog(
             }
         },
         dismissButton = {
-            OutlinedButton(onClick = onDismiss) {
+            OutlinedButton(
+                onClick = onDismiss,
+                shape = RoundedCornerShape(12.dp),
+                border = BorderStroke(1.dp, Teal),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = Teal
+                )
+            ) {
                 Text("Cerrar")
             }
         }
     )
 }
+
 private fun formatDisplayDate(dateTimeString: String?): String {
     if (dateTimeString.isNullOrBlank()) return "Fecha desconocida"
 
