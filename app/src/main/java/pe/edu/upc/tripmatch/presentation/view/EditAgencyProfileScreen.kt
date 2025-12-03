@@ -1,21 +1,36 @@
 package pe.edu.upc.tripmatch.presentation.view
 
+import android.Manifest
+import android.graphics.Bitmap
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.launch
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import pe.edu.upc.tripmatch.presentation.di.PresentationModule
 import pe.edu.upc.tripmatch.presentation.viewmodel.EditAgencyProfileViewModel
 import pe.edu.upc.tripmatch.ui.theme.AppBackground
@@ -23,7 +38,6 @@ import pe.edu.upc.tripmatch.ui.theme.DividerColor
 import pe.edu.upc.tripmatch.ui.theme.TextPrimary
 import pe.edu.upc.tripmatch.ui.theme.TextSecondary
 import pe.edu.upc.tripmatch.ui.theme.TurquoiseDark
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,6 +48,24 @@ fun EditAgencyProfileScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    var capturedImage by remember { mutableStateOf<Bitmap?>(null) }
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicturePreview()
+    ) { bitmap ->
+        if (bitmap != null) {
+            capturedImage = bitmap
+            Toast.makeText(context, "Foto tomada (Recuerda: se necesita subir al servidor)", Toast.LENGTH_SHORT).show()
+        }
+    }
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            cameraLauncher.launch()
+        } else {
+            Toast.makeText(context, "Se requiere permiso de cámara", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     LaunchedEffect(uiState.saveSuccess) {
         if (uiState.saveSuccess) {
@@ -84,7 +116,8 @@ fun EditAgencyProfileScreen(
                     .padding(padding)
                     .padding(horizontal = 20.dp)
                     .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 if (uiState.isSaving) {
                     LinearProgressIndicator(
@@ -99,6 +132,61 @@ fun EditAgencyProfileScreen(
                 uiState.errorMessage?.let {
                     Text(it, color = MaterialTheme.colorScheme.error, fontSize = 14.sp)
                 }
+                Box(
+                    contentAlignment = Alignment.BottomEnd,
+                    modifier = Modifier.padding(vertical = 16.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(120.dp)
+                            .clip(CircleShape)
+                            .border(2.dp, TurquoiseDark, CircleShape)
+                            .background(Color.LightGray)
+                            .clickable { permissionLauncher.launch(Manifest.permission.CAMERA) },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (capturedImage != null) {
+                            Image(
+                                bitmap = capturedImage!!.asImageBitmap(),
+                                contentDescription = "Foto capturada",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else {
+                            AsyncImage(
+                                model = uiState.avatarUrl.ifBlank { "https://via.placeholder.com/150" },
+                                contentDescription = "Avatar actual",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+                    }
+
+                    Surface(
+                        shape = CircleShape,
+                        color = TurquoiseDark,
+                        shadowElevation = 4.dp,
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clickable { permissionLauncher.launch(Manifest.permission.CAMERA) }
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.CameraAlt,
+                                contentDescription = "Tomar foto",
+                                tint = Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                }
+                ProfileTextField(
+                    value = uiState.avatarUrl,
+                    onValueChange = { viewModel.onFieldChange("avatar", it) },
+                    label = "URL del Avatar "
+                )
+
+
                 ProfileTextField(
                     value = uiState.agencyName,
                     onValueChange = { viewModel.onFieldChange("name", it) },
@@ -116,18 +204,14 @@ fun EditAgencyProfileScreen(
                     singleLine = false,
                     modifier = Modifier.height(120.dp)
                 )
-                ProfileTextField(
-                    value = uiState.avatarUrl,
-                    onValueChange = { viewModel.onFieldChange("avatar", it) },
-                    label = "URL del Avatar"
-                )
 
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     "Información de Contacto",
                     fontWeight = FontWeight.Bold,
                     fontSize = 20.sp,
-                    color = TextPrimary
+                    color = TextPrimary,
+                    modifier = Modifier.align(Alignment.Start)
                 )
                 ProfileTextField(
                     value = uiState.contactEmail,
@@ -145,7 +229,8 @@ fun EditAgencyProfileScreen(
                     "Redes Sociales",
                     fontWeight = FontWeight.Bold,
                     fontSize = 20.sp,
-                    color = TextPrimary
+                    color = TextPrimary,
+                    modifier = Modifier.align(Alignment.Start)
                 )
                 ProfileTextField(
                     value = uiState.facebookUrl,
