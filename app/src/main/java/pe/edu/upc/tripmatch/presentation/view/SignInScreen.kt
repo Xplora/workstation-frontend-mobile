@@ -94,7 +94,7 @@ fun SignInScreen(
                 )
                 Spacer(Modifier.height(6.dp))
                 Text(
-                    text = "Log in to your account",
+                    text = "Inicia sesión en tu cuenta",
                     fontSize = 16.sp,
                     color = TextSecondary,
                     textAlign = TextAlign.Center
@@ -135,7 +135,7 @@ fun SignInScreen(
                     AuthInputField(
                         value = uiState.email,
                         onValueChange = { viewModel.setEmail(it) },
-                        label = "Email",
+                        label = "Correo",
                         icon = Icons.Default.Email,
                         keyboardType = KeyboardType.Email
                     )
@@ -143,7 +143,7 @@ fun SignInScreen(
                     AuthInputField(
                         value = uiState.password,
                         onValueChange = { viewModel.setPassword(it) },
-                        label = "Password",
+                        label = "Contraseña",
                         icon = Icons.Default.Lock,
                         keyboardType = KeyboardType.Password,
                         isPassword = true
@@ -172,7 +172,7 @@ fun SignInScreen(
                                 color = Color.White
                             )
                         } else {
-                            Text("Log In", fontWeight = FontWeight.SemiBold)
+                            Text("Inicia Sesión", fontWeight = FontWeight.SemiBold)
                         }
                     }
 
@@ -182,9 +182,9 @@ fun SignInScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.Center
                     ) {
-                        Text("Are you new here? ", color = TextSecondary)
+                        Text("¿Eres nuevo aquí?", color = TextSecondary)
                         Text(
-                            "Create an account",
+                            "Crea una cuenta",
                             color = TealDark,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.clickable { onNavigateTo(AuthFlowScreen.Register) }
@@ -223,7 +223,7 @@ private fun LoginSignUpToggle(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                "Log In",
+                "Inicia Sesión",
                 color = if (selected == 0) Color.White else TealDark,
                 fontWeight = FontWeight.SemiBold
             )
@@ -238,7 +238,7 @@ private fun LoginSignUpToggle(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                "Sign Up",
+                "Regístrate",
                 color = if (selected == 1) Color.White else TealDark,
                 fontWeight = FontWeight.SemiBold
             )
