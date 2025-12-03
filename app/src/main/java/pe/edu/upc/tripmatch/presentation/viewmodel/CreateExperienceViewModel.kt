@@ -206,7 +206,13 @@ class CreateExperienceViewModel(
             }
         }
     }
-
+    fun removeImage(index: Int) {
+        val currentList = _uiState.value.images.toMutableList()
+        if (index in currentList.indices) {
+            currentList.removeAt(index)
+            _uiState.value = _uiState.value.copy(images = currentList)
+        }
+    }
     fun resetState() {
         _uiState.value = CreateExperienceUiState()
     }

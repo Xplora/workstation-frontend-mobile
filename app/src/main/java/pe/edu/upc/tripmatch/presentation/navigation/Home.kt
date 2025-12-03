@@ -241,10 +241,22 @@ fun MainAppContent(authViewModel: AuthViewModel) {
                 composable("create_experience") {
                     CreateExperienceScreen(
                         onExperienceCreated = {
-                            navController.popBackStack()
+                            navController.navigate("success_experience") {
+                                popUpTo("manage_experiences") { inclusive = false }
+                            }
                         },
                         onNavigateBack = {
                             navController.popBackStack()
+                        }
+                    )
+                }
+
+                composable("success_experience") {
+                    SuccessScreen(
+                        onContinueClick = {
+                            navController.navigate("manage_experiences") {
+                                popUpTo("manage_experiences") { inclusive = true }
+                            }
                         }
                     )
                 }
